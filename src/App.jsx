@@ -134,10 +134,22 @@ function App() {
     })()
   }, [store.user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Shared event link (?event=<id>) ────────────────────────
+  // Auto-opens the event detail modal once events have loaded, so links
+  // shared to WhatsApp/Facebook/etc. land straight on the right event.
+  useEffect(() => {
+    if (modal) return
+    const id = new URLSearchParams(window.location.search).get('event')
+    if (!id || !store.events.length) return
+    if (!store.events.some((e) => e.id === id)) return
+    setSelectedEventId(id)
+    open('event')
+  }, [store.events.length]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── First-visit onboarding ─────────────────────────────────
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    const hasFlow = params.get('paydunya_return') || params.get('paydunya_cancel') || params.get('invite')
+    const hasFlow = params.get('paydunya_return') || params.get('paydunya_cancel') || params.get('invite') || params.get('event')
     if (hasFlow) return
     if (!localStorage.getItem('om_onboarded')) {
       const t = setTimeout(() => setModal(m => m ?? 'onboarding'), 600)
@@ -158,7 +170,20 @@ function App() {
 
   const openFeed = () => requireAuth(() => { store.loadFeedPosts(); open('feed') })
 
-  const openEvent = (id) => { setSelectedEventId(id); open('event') }
+  const openEvent = (id) => {
+    setSelectedEventId(id)
+    open('event')
+    const url = new URL(window.location.href)
+    url.searchParams.set('event', id)
+    window.history.pushState({}, '', url)
+  }
+
+  const closeEvent = () => {
+    close()
+    const url = new URL(window.location.href)
+    url.searchParams.delete('event')
+    window.history.replaceState({}, '', url)
+  }
 
   const handleAddToCart = (event, selections) => {
     const result = store.addToCart(event, selections)
@@ -274,8 +299,8 @@ function App() {
           close()
           return null
         }}
-        onSignup={async (name, email, pwd) => {
-          const r = await store.signup(name, email, pwd)
+        onSignup={async (name, email, pwd, businessInfo) => {
+          const r = await store.signup(name, email, pwd, businessInfo)
           if (!r.ok) return r.error
           if (r.needsEmailConfirmation) {
             toast('Vérifiez votre boîte email pour confirmer votre compte.', 'info')
@@ -296,8 +321,9 @@ function App() {
       <EventDetailModal
         open={modal === 'event'}
         event={selectedEvent}
-        onClose={close}
+        onClose={closeEvent}
         onAddToCart={(selections) => requireAuth(() => handleAddToCart(selectedEvent, selections))}
+        toast={toast}
       />
 
       {/* ── Cart ── */}

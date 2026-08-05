@@ -120,6 +120,30 @@
   margin-bottom: 16px;
 }
 
+.accountTypeRow {
+  display: flex;
+  gap: 8px;
+}
+.accountTypeBtn {
+  flex: 1;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 10px;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s;
+}
+.accountTypeBtn:hover { border-color: var(--purple); }
+.accountTypeActive {
+  background: rgba(139,34,118,.12);
+  border-color: var(--purple);
+  color: var(--purple3);
+}
+
 .switchTxt {
   text-align: center;
   font-size: 0.82rem;

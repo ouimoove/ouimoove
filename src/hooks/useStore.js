@@ -29,7 +29,13 @@ function shapeEvent(event) {
       total: t.quantity_total,
       sold:  t.quantity_sold,
     })),
-    organizer: event.organizer_id,
+    organizer:     event.organizer_id,
+    // Business accounts show their business name; personal accounts show
+    // their name. Falls back gracefully if the organizer_type/business_name
+    // columns aren't present yet on older profile rows.
+    organizerName: event.profiles?.account_type === 'business'
+      ? (event.profiles?.business_name || event.profiles?.name || 'Organisateur')
+      : (event.profiles?.name || event.profiles?.full_name || 'Organisateur'),
   }
 }
 
@@ -111,6 +117,7 @@ export function useStore() {
       .select(`
         id, title, description, city, venue, category,
         event_date, emoji, image_url, status, organizer_id,
+        profiles:organizer_id (name, full_name),
         ticket_types (id, name, price_cfa, quantity_total, quantity_sold)
       `)
       .eq('status', 'published')
@@ -433,18 +440,37 @@ export function useStore() {
     return { ok: true, user: profile }
   }, [loadUserRole, loadFavorites])
 
-  const signup = useCallback(async (name, email, password) => {
+  const signup = useCallback(async (name, email, password, businessInfo = {}) => {
     if (!name || !email || !password) return { ok: false, error: 'Tous les champs sont requis.' }
     if (password.length < 6) return { ok: false, error: 'Mot de passe trop court (6 car. min).' }
+    const { accountType = 'personal', businessName = '', phone = '' } = businessInfo
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: name } },
+      options: { data: {
+        full_name: name,
+        account_type: accountType,
+        business_name: businessName,
+        phone,
+      } },
     })
     if (error) return { ok: false, error: error.message }
     const u = data.user
     if (!u) return { ok: false, error: 'Création du compte impossible.' }
     const profile = { id: u.id, name, email: u.email }
+
+    // Best-effort: persist the business info on the profile row too, so it's
+    // queryable/joinable (e.g. showing "Organisé par <business>" on events)
+    // without relying solely on auth metadata. Column may not exist yet on
+    // projects that haven't run the events-moderation-era migration — don't
+    // let that failure block signup, which has already succeeded above.
+    if (accountType === 'business') {
+      await supabase.from('profiles')
+        .update({ account_type: accountType, business_name: businessName, phone })
+        .eq('id', u.id)
+        .then(({ error: profErr }) => { if (profErr) console.warn('signup: could not persist business info:', profErr.message) })
+    }
+
     // No session yet means email confirmation is required — don't mark the
     // user as logged in until they actually have a real, authenticated
     // session, otherwise authenticated requests (storage, RLS-protected

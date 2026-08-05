@@ -60,7 +60,10 @@ function LoginForm({ onLogin, onGoogle, onSwitch }) {
 }
 
 function SignupForm({ onSignup, onGoogle, onSwitch }) {
+  const [accountType, setAccountType] = useState('personal')
   const [name, setName] = useState('')
+  const [businessName, setBusinessName] = useState('')
+  const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [pwd, setPwd] = useState('')
   const [agreed, setAgreed] = useState(false)
@@ -68,10 +71,18 @@ function SignupForm({ onSignup, onGoogle, onSwitch }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const isBusiness = accountType === 'business'
+
   const submit = async () => {
     if (!agreed) { setError('Veuillez accepter les conditions d’utilisation pour continuer.'); return }
+    if (isBusiness && !businessName.trim()) { setError('Le nom de l’entreprise est requis.'); return }
+    if (isBusiness && !phone.trim()) { setError('Le numéro de téléphone est requis.'); return }
     setLoading(true)
-    const err = await onSignup(name, email, pwd)
+    const err = await onSignup(name, email, pwd, {
+      accountType,
+      businessName: isBusiness ? businessName.trim() : '',
+      phone: isBusiness ? phone.trim() : '',
+    })
     setLoading(false)
     if (err) setError(err)
   }
@@ -96,10 +107,42 @@ function SignupForm({ onSignup, onGoogle, onSwitch }) {
       <div className={styles.divider}><span>ou par email</span></div>
 
       <div className={styles.group}>
-        <label className={styles.label}>Nom complet</label>
+        <label className={styles.label}>Vous vous inscrivez en tant que…</label>
+        <div className={styles.accountTypeRow}>
+          <button
+            type="button"
+            className={`${styles.accountTypeBtn} ${!isBusiness ? styles.accountTypeActive : ''}`}
+            onClick={() => setAccountType('personal')}
+          >👤 Particulier</button>
+          <button
+            type="button"
+            className={`${styles.accountTypeBtn} ${isBusiness ? styles.accountTypeActive : ''}`}
+            onClick={() => setAccountType('business')}
+          >🏢 Entreprise / Organisateur</button>
+        </div>
+      </div>
+
+      <div className={styles.group}>
+        <label className={styles.label}>{isBusiness ? 'Nom du contact' : 'Nom complet'}</label>
         <input className={styles.input} type="text" placeholder="Amina Traoré"
           value={name} onChange={e => setName(e.target.value)} />
       </div>
+
+      {isBusiness && (
+        <>
+          <div className={styles.group}>
+            <label className={styles.label}>Nom de l’entreprise</label>
+            <input className={styles.input} type="text" placeholder="Ex. Aurum Events"
+              value={businessName} onChange={e => setBusinessName(e.target.value)} />
+          </div>
+          <div className={styles.group}>
+            <label className={styles.label}>Téléphone</label>
+            <input className={styles.input} type="tel" placeholder="+228 90 00 00 00"
+              value={phone} onChange={e => setPhone(e.target.value)} />
+          </div>
+        </>
+      )}
+
       <div className={styles.group}>
         <label className={styles.label}>Email</label>
         <input className={styles.input} type="email" placeholder="vous@email.com"

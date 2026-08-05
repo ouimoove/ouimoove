@@ -3,7 +3,7 @@ import { Modal, ModalBody } from '../Modal.jsx'
 import { formatDate, fmtPrice } from '../../utils/helpers.js'
 import styles from './EventDetailModal.module.css'
 
-export function EventDetailModal({ open, event, onClose, onAddToCart }) {
+export function EventDetailModal({ open, event, onClose, onAddToCart, toast }) {
   const [selections, setSelections] = useState({})
 
   useEffect(() => { if (open) setSelections({}) }, [open])
@@ -11,6 +11,25 @@ export function EventDetailModal({ open, event, onClose, onAddToCart }) {
   if (!event) return null
 
   const isPast = event.date < new Date().toISOString().slice(0, 10)
+
+  const shareUrl = `${window.location.origin}${window.location.pathname}?event=${event.id}`
+  const shareText = `${event.title} · ${formatDate(event.date)} · ${event.city}`
+
+  const shareWhatsapp = () => window.open(`https://wa.me/?text=${encodeURIComponent(`${shareText}\n${shareUrl}`)}`, '_blank', 'noopener')
+  const shareFacebook = () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank', 'noopener')
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      toast?.('Lien copié ✓', 'success')
+    } catch {
+      toast?.('Impossible de copier le lien', 'error')
+    }
+  }
+  const nativeShare = async () => {
+    try {
+      await navigator.share({ title: event.title, text: shareText, url: shareUrl })
+    } catch { /* user cancelled — no-op */ }
+  }
 
   const changeQty = (idx, delta) => {
     if (isPast) return
@@ -41,11 +60,23 @@ export function EventDetailModal({ open, event, onClose, onAddToCart }) {
 
         <div className={styles.categoryBadge}>{event.category}</div>
         <h2 className={styles.title}>{event.title}</h2>
+        {event.organizerName && (
+          <p className={styles.organizer}>Organisé par <b>{event.organizerName}</b></p>
+        )}
         <p className={styles.desc}>{event.desc}</p>
 
         <div className={styles.meta}>
           <span>📅 <b>{formatDate(event.date)}</b> à {event.time}</span>
           <span>📍 {event.location}, {event.city}</span>
+        </div>
+
+        <div className={styles.shareRow}>
+          <button onClick={shareWhatsapp} className={styles.shareBtn} aria-label="Partager sur WhatsApp">💬 WhatsApp</button>
+          <button onClick={shareFacebook} className={styles.shareBtn} aria-label="Partager sur Facebook">📘 Facebook</button>
+          <button onClick={copyLink} className={styles.shareBtn} aria-label="Copier le lien">🔗 Copier le lien</button>
+          {typeof navigator !== 'undefined' && navigator.share && (
+            <button onClick={nativeShare} className={styles.shareBtn} aria-label="Partager">📤 Partager</button>
+          )}
         </div>
 
         <h3 className={styles.sectionTitle}>Billets disponibles</h3>
