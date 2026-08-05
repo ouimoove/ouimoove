@@ -20,6 +20,7 @@ import { ProfileModal } from './components/modals/ProfileModal.jsx'
 import { OrganizerModal } from './components/modals/OrganizerModal.jsx'
 import { ResaleMarketModal } from './components/modals/ResaleMarketModal.jsx'
 import { FeedModal } from './components/modals/FeedModal.jsx'
+import { RSVPModal } from './components/modals/RSVPModal.jsx'
 
 function App() {
   const store = useStore()
@@ -32,6 +33,7 @@ function App() {
   const [filterCategory,  setFilterCategory]  = useState('')
   const [sortBy,          setSortBy]          = useState('date')
   const [cities,          setCities]          = useState([])
+  const [pendingInvite,   setPendingInvite]    = useState(null)
 
   const open  = (m) => setModal(m)
   const close = () => setModal(null)
@@ -96,43 +98,52 @@ function App() {
     } else if (params.get('invite')) {
       const token = params.get('invite')
       window.history.replaceState({}, '', window.location.pathname)
-      ;(async () => {
-        if (!store.user) {
-          sessionStorage.setItem('pending_invite', token)
-          toast('Connectez-vous pour accepter cette invitation.', 'info')
-          open('login')
-          return
-        }
-        const result = await store.acceptInvitation(token)
-        if (result?.ok) {
-          toast('🎉 Invitation acceptée ! Vous pouvez maintenant voir et réserver cet événement.', 'success')
-        } else if (result?.error === 'email_mismatch') {
-          toast(`Cette invitation est destinée à ${result.invited_email}. Connectez-vous avec ce compte.`, 'error')
-        } else {
-          toast(result?.error || 'Lien d\'invitation invalide.', 'error')
-        }
-      })()
+      if (!store.user) {
+        sessionStorage.setItem('pending_invite', token)
+        toast('Connectez-vous pour répondre à cette invitation.', 'info')
+        open('login')
+        return
+      }
+      loadInviteAndOpenRsvp(token)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Accept pending invite after login
+  // Show the RSVP prompt for a pending invite once the user is logged in
   useEffect(() => {
     if (!store.user) return
     const token = sessionStorage.getItem('pending_invite')
     if (!token) return
     sessionStorage.removeItem('pending_invite')
-    ;(async () => {
-      const result = await store.acceptInvitation(token)
-      if (result?.ok) {
-        toast('🎉 Invitation acceptée ! Vous pouvez maintenant voir et réserver cet événement.', 'success')
-        await store.loadEvents()
-      } else if (result?.error === 'email_mismatch') {
-        toast(`Cette invitation est destinée à ${result.invited_email}.`, 'error')
-      } else {
-        toast(result?.error || 'Lien d\'invitation invalide.', 'error')
-      }
-    })()
+    loadInviteAndOpenRsvp(token)
   }, [store.user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const loadInviteAndOpenRsvp = async (token) => {
+    const result = await store.getInvitationDetails(token)
+    if (result?.ok) {
+      setPendingInvite({ token, ...result })
+      open('rsvp')
+    } else if (result?.error === 'email_mismatch') {
+      toast(`Cette invitation est destinée à ${result.invited_email}. Connectez-vous avec ce compte.`, 'error')
+    } else {
+      toast(result?.error || 'Lien d\'invitation invalide.', 'error')
+    }
+  }
+
+  const respondToInvite = async (token, decision) => {
+    const result = await store.respondInvitation(token, decision)
+    if (result?.ok) {
+      toast(
+        decision === 'accepted'
+          ? '🎉 Présence confirmée ! Vous pouvez maintenant voir et réserver cet événement.'
+          : 'Réponse envoyée. Merci de nous avoir prévenus.',
+        'success'
+      )
+      close()
+      if (decision === 'accepted') await store.loadEvents()
+    } else {
+      toast(result?.error || 'Une erreur est survenue.', 'error')
+    }
+  }
 
   // ── Shared event link (?event=<id>) ────────────────────────
   // Auto-opens the event detail modal once events have loaded, so links
@@ -589,6 +600,14 @@ function App() {
         onClose={close}
         onConfirm={store.deleteAccount}
         toast={toast}
+      />
+
+      {/* ── Event invitation RSVP ── */}
+      <RSVPModal
+        open={modal === 'rsvp'}
+        onClose={close}
+        invite={pendingInvite}
+        onRespond={respondToInvite}
       />
 
       <Toast toasts={toasts} />

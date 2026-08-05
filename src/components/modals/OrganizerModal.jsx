@@ -1119,8 +1119,8 @@ function InvitationsTab({ myEvents, onInvite, onLoadInvitations, toast }) {
                   <div key={inv.id} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px' }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: '0.88rem', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inv.email}</div>
-                      <div style={{ fontSize: '0.72rem', color: inv.status === 'accepted' ? 'var(--success)' : 'var(--muted)', marginTop: 2 }}>
-                        {inv.status === 'accepted' ? '✓ Accepté' : '⏳ En attente'}
+                      <div style={{ fontSize: '0.72rem', color: inv.status === 'accepted' ? 'var(--success)' : inv.status === 'declined' ? 'var(--danger)' : 'var(--muted)', marginTop: 2 }}>
+                        {inv.status === 'accepted' ? '✓ Accepté' : inv.status === 'declined' ? '✗ Décliné' : '⏳ En attente'}
                       </div>
                     </div>
                     <button

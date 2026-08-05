@@ -26,7 +26,7 @@ export function Footer({ onHowItWorks, onFaq, onContact, onTerms, onPrivacy, onM
           <h4 className={styles.colTitle}>Aide</h4>
           <button className={styles.link} onClick={onFaq}>FAQ</button>
           <button className={styles.link} onClick={onContact}>Nous contacter</button>
-          <a className={styles.link} href="mailto:contact@ouimoove.com">contact@ouimoove.com</a>
+          <a className={styles.link} href="mailto:ouimoovellc@gmail.com">ouimoovellc@gmail.com</a>
         </div>
 
         <div className={styles.linksCol}>
@@ -39,6 +39,12 @@ export function Footer({ onHowItWorks, onFaq, onContact, onTerms, onPrivacy, onM
       <div className={styles.bottom}>
         <span>© {year} OuiMoove™. Tous droits réservés.</span>
         <span className={styles.madeIn}>Fait avec ❤️ en Afrique de l’Ouest</span>
+        <span>
+          Designed by{' '}
+          <a className={styles.link} href="https://waa-woad.vercel.app/" target="_blank" rel="noopener noreferrer">
+            weareaurum
+          </a>
+        </span>
       </div>
     </footer>
   )

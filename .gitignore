@@ -6,3 +6,4 @@ dist
 supabase/.temp/
 ouimoove-upload-key.p12
 .keystore-password.txt
+.mcp.json

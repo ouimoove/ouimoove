@@ -276,7 +276,7 @@ export function ContactModal({ open, onClose, onSubmit, user, toast }) {
             </button>
             <p style={{ textAlign: 'center', color: 'var(--muted)', fontSize: '0.8rem', marginTop: 14 }}>
               Ou écrivez-nous directement à{' '}
-              <a href="mailto:contact@ouimoove.com" style={{ color: 'var(--purple3)', fontWeight: 600 }}>contact@ouimoove.com</a>
+              <a href="mailto:ouimoovellc@gmail.com" style={{ color: 'var(--purple3)', fontWeight: 600 }}>ouimoovellc@gmail.com</a>
             </p>
           </>
         )}
@@ -312,7 +312,7 @@ export const TERMS_SECTIONS = [
   ['11. Droit applicable et arbitrage',
     "Les présentes conditions sont régies par le droit français. Tout litige né de leur interprétation ou de leur exécution sera tranché définitivement selon le Règlement d’arbitrage de la Chambre de Commerce Internationale (CCI/ICC) par un ou plusieurs arbitres nommés conformément à ce règlement. Le siège de l’arbitrage est Paris, France, et la procédure se déroule en français. Cette clause n’empêche pas un recours aux juridictions compétentes pour toute mesure provisoire ou conservatoire."],
   ['12. Contact',
-    "Pour toute question relative à ces conditions, contactez-nous à contact@ouimoove.com."],
+    "Pour toute question relative à ces conditions, contactez-nous à ouimoovellc@gmail.com."],
 ]
 
 export function TermsBody() {
@@ -344,7 +344,7 @@ export function TermsModal({ open, onClose }) {
    ════════════════════════════════════════════════════════════ */
 const PRIVACY_SECTIONS = [
   ['1. Qui sommes-nous',
-    "OuiMoove est une plateforme de billetterie d’événements. Le responsable du traitement de vos données personnelles est l’exploitant d’OuiMoove, joignable à contact@ouimoove.com."],
+    "OuiMoove est une plateforme de billetterie d’événements. Le responsable du traitement de vos données personnelles est l’exploitant d’OuiMoove, joignable à ouimoovellc@gmail.com."],
   ['2. Données que nous collectons',
     "Compte : nom, email, mot de passe (chiffré). Commandes : billets achetés, montants, moyen de paiement utilisé (nous ne stockons jamais vos identifiants bancaires ou mobile money — ceux-ci sont traités directement par nos partenaires de paiement PayDunya). Contenu que vous publiez : photos, vidéos et légendes dans le Feed. Technique : adresse IP, type d’appareil, journaux de connexion, cookies strictement nécessaires au fonctionnement du site."],
   ['3. Pourquoi nous les utilisons',
@@ -354,9 +354,9 @@ const PRIVACY_SECTIONS = [
   ['5. Conservation',
     "Vos données de compte sont conservées tant que votre compte est actif. Les données liées aux transactions (commandes, billets) sont conservées après suppression de votre compte pour satisfaire nos obligations comptables et légales, mais ne sont alors visibles qu’au niveau administratif — les organisateurs ne voient plus votre nom une fois votre compte supprimé."],
   ['6. Vos droits (RGPD — résidents de l’UE)',
-    "Vous disposez d’un droit d’accès, de rectification, d’effacement, de limitation, de portabilité et d’opposition concernant vos données personnelles. Vous pouvez exercer ces droits directement via la page « Supprimer mon compte » ou en nous contactant à contact@ouimoove.com. Vous pouvez également introduire une réclamation auprès de l’autorité de protection des données de votre pays."],
+    "Vous disposez d’un droit d’accès, de rectification, d’effacement, de limitation, de portabilité et d’opposition concernant vos données personnelles. Vous pouvez exercer ces droits directement via la page « Supprimer mon compte » ou en nous contactant à ouimoovellc@gmail.com. Vous pouvez également introduire une réclamation auprès de l’autorité de protection des données de votre pays."],
   ['7. Vos droits (CCPA — résidents de Californie)',
-    "Vous avez le droit de savoir quelles données personnelles sont collectées, de demander leur suppression, et de refuser toute « vente » ou « partage » de vos données — ce que nous ne pratiquons pas. Vous ne serez jamais pénalisé pour l’exercice de ces droits. Contactez-nous à contact@ouimoove.com pour toute demande."],
+    "Vous avez le droit de savoir quelles données personnelles sont collectées, de demander leur suppression, et de refuser toute « vente » ou « partage » de vos données — ce que nous ne pratiquons pas. Vous ne serez jamais pénalisé pour l’exercice de ces droits. Contactez-nous à ouimoovellc@gmail.com pour toute demande."],
   ['8. Sécurité',
     "Nous utilisons des mesures techniques et organisationnelles raisonnables (chiffrement, contrôle d’accès) pour protéger vos données. Aucun système n’étant infaillible, nous ne pouvons garantir une sécurité absolue."],
   ['9. Transferts internationaux',
@@ -364,7 +364,7 @@ const PRIVACY_SECTIONS = [
   ['10. Cookies',
     "Nous utilisons uniquement des cookies strictement nécessaires au fonctionnement du site (session, authentification). Aucun cookie publicitaire tiers n’est utilisé."],
   ['11. Contact',
-    "Pour toute question ou demande relative à vos données personnelles : contact@ouimoove.com."],
+    "Pour toute question ou demande relative à vos données personnelles : ouimoovellc@gmail.com."],
 ]
 
 export function PrivacyModal({ open, onClose, onDeleteAccount }) {

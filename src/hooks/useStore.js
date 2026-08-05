@@ -34,8 +34,8 @@ function shapeEvent(event) {
     // their name. Falls back gracefully if the organizer_type/business_name
     // columns aren't present yet on older profile rows.
     organizerName: event.profiles?.account_type === 'business'
-      ? (event.profiles?.business_name || event.profiles?.name || 'Organisateur')
-      : (event.profiles?.name || event.profiles?.full_name || 'Organisateur'),
+      ? (event.profiles?.business_name || event.profiles?.full_name || 'Organisateur')
+      : (event.profiles?.full_name || 'Organisateur'),
   }
 }
 
@@ -117,7 +117,7 @@ export function useStore() {
       .select(`
         id, title, description, city, venue, category,
         event_date, emoji, image_url, status, organizer_id,
-        profiles:organizer_id (name, full_name),
+        profiles:organizer_id (full_name, business_name, account_type),
         ticket_types (id, name, price_cfa, quantity_total, quantity_sold)
       `)
       .eq('status', 'published')
@@ -168,14 +168,14 @@ export function useStore() {
       .select(`
         id, title, description, city, venue, category,
         event_date, emoji, image_url, status, organizer_id,
-        profiles:organizer_id (name, email),
+        profiles:organizer_id (full_name, business_name, account_type, email),
         ticket_types (id, name, price_cfa, quantity_total, quantity_sold)
       `)
       .eq('status', 'pending')
       .order('event_date', { ascending: true })
 
     if (error) { console.error('loadPendingEvents:', error); return [] }
-    return (data || []).map((e) => ({ ...shapeEvent(e), organizerName: e.profiles?.name, organizerEmail: e.profiles?.email }))
+    return (data || []).map((e) => ({ ...shapeEvent(e), organizerEmail: e.profiles?.email }))
   }, [])
 
   const approveEvent = useCallback(async (eventId) => {
@@ -1456,8 +1456,14 @@ export function useStore() {
     return data
   }, [])
 
-  const acceptInvitation = useCallback(async (token) => {
-    const { data, error } = await supabase.rpc('accept_invitation', { invite_token: token })
+  const getInvitationDetails = useCallback(async (token) => {
+    const { data, error } = await supabase.rpc('get_invitation_details', { invite_token: token })
+    if (error) return { ok: false, error: error.message }
+    return data
+  }, [])
+
+  const respondInvitation = useCallback(async (token, decision) => {
+    const { data, error } = await supabase.rpc('respond_invitation', { invite_token: token, decision })
     if (error) return { ok: false, error: error.message }
     return data
   }, [])
@@ -1552,7 +1558,8 @@ export function useStore() {
 
     inviteToEvent,
     loadInvitations,
-    acceptInvitation,
+    getInvitationDetails,
+    respondInvitation,
 
     submitVerification,
     loadVerificationStatus,
