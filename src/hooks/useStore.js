@@ -447,12 +447,15 @@ export function useStore() {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: {
-        full_name: name,
-        account_type: accountType,
-        business_name: businessName,
-        phone,
-      } },
+      options: {
+        emailRedirectTo: window.location.origin,
+        data: {
+          full_name: name,
+          account_type: accountType,
+          business_name: businessName,
+          phone,
+        },
+      },
     })
     if (error) return { ok: false, error: error.message }
     const u = data.user
