@@ -5,11 +5,24 @@ const CORS = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Sender-controlled fields (name, event title/city) are interpolated into
+// the email HTML below — escape them so a crafted display name/event title
+// can't inject markup into an email a third party (the invitee) receives.
+function escapeHtml(s: unknown) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
 
   try {
-    const { to, inviterName, eventTitle, eventDate, eventCity, inviteUrl } = await req.json()
+    const { to, inviterName: inviterNameRaw, eventTitle: eventTitleRaw, eventDate: eventDateRaw, eventCity: eventCityRaw, inviteUrl } = await req.json()
+    const inviterName = escapeHtml(inviterNameRaw)
+    const eventTitle  = escapeHtml(eventTitleRaw)
+    const eventDate   = escapeHtml(eventDateRaw)
+    const eventCity   = escapeHtml(eventCityRaw)
     const RESEND_KEY = Deno.env.get('RESEND_API_KEY')
 
     if (!RESEND_KEY) {

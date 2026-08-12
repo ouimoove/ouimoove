@@ -5,11 +5,21 @@ const CORS = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// User-controlled fields (display name, event/ticket titles) are
+// interpolated into the email HTML below — escape them so a crafted name
+// or event title can't inject markup into the confirmation email.
+function escapeHtml(s: unknown) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
 
   try {
-    const { to, userName, orderId, items, total, method } = await req.json()
+    const { to, userName: userNameRaw, orderId, items, total, method } = await req.json()
+    const userName = escapeHtml(userNameRaw)
     const RESEND_KEY = Deno.env.get('RESEND_API_KEY')
     if (!RESEND_KEY) {
       console.log('RESEND_API_KEY not configured — skipping email')
@@ -18,9 +28,9 @@ serve(async (req) => {
 
     const rows = (items ?? []).map((i: any) =>
       `<tr style="border-bottom:1px solid #2d2d4a">
-        <td style="padding:10px 0;color:#e0e0f0">${i.eventTitle} — ${i.ticketName}</td>
-        <td style="text-align:center;padding:10px 0;color:#e0e0f0">×${i.qty}</td>
-        <td style="text-align:right;padding:10px 0;color:#e0e0f0">${(i.price * i.qty).toLocaleString('fr-FR')} FCFA</td>
+        <td style="padding:10px 0;color:#e0e0f0">${escapeHtml(i.eventTitle)} — ${escapeHtml(i.ticketName)}</td>
+        <td style="text-align:center;padding:10px 0;color:#e0e0f0">×${Number(i.qty) || 0}</td>
+        <td style="text-align:right;padding:10px 0;color:#e0e0f0">${(Number(i.price) * Number(i.qty) || 0).toLocaleString('fr-FR')} FCFA</td>
       </tr>`
     ).join('')
 
