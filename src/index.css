@@ -31,9 +31,13 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* `absolute` instead of `fixed`: a full-viewport fixed layer forces the
+   browser to recomposite this filtered SVG on every scroll frame, which is
+   the main source of the scroll flicker/slowness — absolute lets it scroll
+   with the page like normal content instead of being repainted against it. */
 body::before {
   content: '';
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 0;
   pointer-events: none;

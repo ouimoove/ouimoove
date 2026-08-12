@@ -2,8 +2,13 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(255,255,255,0.82);
-  backdrop-filter: blur(20px);
+  /* A sticky element with a large backdrop-filter blur is one of the
+     heaviest things a browser can recomposite on every scroll frame —
+     this is the main source of the reported scroll flicker/slowness.
+     Higher background opacity + a smaller blur radius keeps the glass
+     look at a fraction of the compositing cost. */
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border);
   box-shadow: 0 1px 0 rgba(36,18,46,0.03);
   padding: 0 2rem;
@@ -145,7 +150,7 @@
 .drawer {
   position: fixed; top: 80px; left: 0; right: 0; z-index: 99;
   background: rgba(255,255,255,0.98);
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(6px);
   border-bottom: 1px solid var(--border);
   display: flex; flex-direction: column; gap: 6px;
   padding: 16px;
