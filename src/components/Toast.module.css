@@ -1,5 +1,9 @@
 .container {
-  position: fixed; bottom: 24px; right: 24px; z-index: 999;
+  position: fixed; right: 24px; z-index: 999;
+  /* env(safe-area-inset-bottom) is 0 on regular browsers/older devices —
+     this only matters on edge-to-edge Android/notched iOS where the
+     bottom nav gesture bar would otherwise overlap the toast. */
+  bottom: calc(24px + env(safe-area-inset-bottom));
   display: flex; flex-direction: column; gap: 8px; pointer-events: none;
 }
 .toast {

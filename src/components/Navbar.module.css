@@ -11,11 +11,14 @@
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border);
   box-shadow: 0 1px 0 rgba(36,18,46,0.03);
-  padding: 0 2rem;
+  /* env(safe-area-inset-top) is 0 everywhere except edge-to-edge
+     Android/notched devices, where it keeps the logo/nav buttons from
+     sitting under the status bar. */
+  padding: env(safe-area-inset-top) 2rem 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 110px;
+  height: calc(110px + env(safe-area-inset-top));
 }
 
 .logo {
@@ -148,7 +151,7 @@
 
 /* ── Mobile drawer ── */
 .drawer {
-  position: fixed; top: 80px; left: 0; right: 0; z-index: 99;
+  position: fixed; top: calc(80px + env(safe-area-inset-top)); left: 0; right: 0; z-index: 99;
   background: rgba(255,255,255,0.98);
   backdrop-filter: blur(6px);
   border-bottom: 1px solid var(--border);
@@ -183,7 +186,7 @@
 
 /* ── Responsive ── */
 @media (max-width: 768px) {
-  .nav { padding: 0 1rem; height: 80px; }
+  .nav { padding: env(safe-area-inset-top) 1rem 0; height: calc(80px + env(safe-area-inset-top)); }
   .logo img { height: 42px; }
   .right { display: none; }
   .mobileRight { display: flex; }
