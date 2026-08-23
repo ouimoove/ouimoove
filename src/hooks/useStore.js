@@ -1,395 +1,120 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
-import { DEFAULT_EVENTS } from '../data/events.js'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase.js'
+import { useAsyncStatus } from './useAsyncStatus.js'
+import { useAuth } from './useAuth.js'
+import { useEvents } from './useEvents.js'
+import { useOrders } from './useOrders.js'
+import { useResale } from './useResale.js'
+import { useCart } from './useCart.js'
+import { useFeed } from './useFeed.js'
+import { usePush } from './usePush.js'
+import { useInvitations } from './useInvitations.js'
+import { useOrganizerAdmin } from './useOrganizerAdmin.js'
+import { useContact } from './useContact.js'
 
-// Set VITE_PAYMENT_MODE=paydunya in .env (and Vercel env vars) to use real PayDunya payments.
-// Default is 'simulation' (direct DB insert as paid — no redirect).
-const PAYMENT_MODE = import.meta.env.VITE_PAYMENT_MODE || 'simulation'
-
-// ─── Shape helpers ────────────────────────────────────────────
-function shapeEvent(event) {
-  const d = new Date(event.event_date)
-  return {
-    id:        event.id,
-    title:     event.title,
-    category:  event.category || '',
-    date:      d.toISOString().slice(0, 10),
-    time:      d.toISOString().slice(11, 16),
-    location:  event.venue || '',
-    city:      event.city  || '',
-    desc:      event.description || '',
-    emoji:     event.emoji || '🎟️',
-    imageUrl:  event.image_url || null,
-    isPrivate: event.is_private || false,
-    status:    event.status,
-    tickets:   (event.ticket_types || []).map((t) => ({
-      id:    t.id,
-      name:  t.name,
-      price: t.price_cfa,
-      total: t.quantity_total,
-      sold:  t.quantity_sold,
-    })),
-    organizer:     event.organizer_id,
-    // Business accounts show their business name; personal accounts show
-    // their name. Falls back gracefully if the organizer_type/business_name
-    // columns aren't present yet on older profile rows.
-    organizerName: event.profiles?.account_type === 'business'
-      ? (event.profiles?.business_name || event.profiles?.full_name || 'Organisateur')
-      : (event.profiles?.full_name || 'Organisateur'),
-  }
-}
-
-function shapeMyOrder(order, eventsRef, userName = '') {
-  const items = (order.order_items || []).map((item) => {
-    const ev = eventsRef.find((e) => e.id === item.event_id)
-    const tk = ev?.tickets.find((t) => t.id === item.ticket_type_id)
-    return {
-      id:         item.id,
-      eventId:    item.event_id,
-      eventTitle: ev?.title ?? 'Événement',
-      ticketName: tk?.name  ?? 'Billet',
-      price:      item.unit_price_cfa,
-      qty:        item.quantity,
-      checkedIn:      item.checked_in,
-      checkedInCount: item.checked_in_count || 0,
-      isResale:       item.is_resale || false,
-      resold:         item.resold    || false,
-    }
-  })
-  return {
-    id:       order.id,
-    userId:   order.user_id,
-    userName: userName,
-    date:     order.created_at,
-    items,
-    total:    order.total_cfa,
-    method:   order.payment_method,
-    status:   order.payment_status,
-  }
-}
-
-// ─── Hook ─────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────
+// Composition root. Each domain below owns one slice of state and has no
+// knowledge of the others — dependencies flow one way, top to bottom
+// (auth → events → orders → resale → cart → feed/push/invitations/admin).
+// The one place a real cycle exists in the original single-file version —
+// event mutations needing to refresh organizer stats/orders afterward — is
+// resolved here explicitly instead of being hidden inside either domain.
+// This file's only job is wiring; every return value/behavior below is
+// unchanged from the pre-split version.
+// ─────────────────────────────────────────────────────────────────────────
 export function useStore() {
-  const [user,            setUserState]       = useState(null)
-  const [userRole,        setUserRole]        = useState('user')
-  const [userNumber,      setUserNumber]      = useState(null)
-  const [isVerified,      setIsVerified]      = useState(false)
-  const [events,          setEventsState]     = useState([])
-  const eventsRef = useRef(events)
-  useEffect(() => { eventsRef.current = events }, [events])
-  const [cart,            setCartState]       = useState(() => {
-    try { return JSON.parse(localStorage.getItem('om_cart')) || [] } catch { return [] }
-  })
-  const [myOrders,        setMyOrders]        = useState([])
-  const [organizerOrders, setOrganizerOrders] = useState([])
-  const [organizerStats,  setOrganizerStats]  = useState(null)
-  const [favorites,       setFavoritesState]  = useState([])
-  const [applications,    setApplications]    = useState([])
-  const [resaleListings,  setResaleListings]  = useState([])
-  const [feedPosts,       setFeedPosts]       = useState([])
-  const [justPaidOrder,   setJustPaidOrder]   = useState(null)
+  const { loading, errors, setLoad, setErr } = useAsyncStatus()
+  const auth = useAuth()
 
-  const [loading, setLoading] = useState({
-    events: true, orders: false, orgOrders: false, stats: false, resale: false, feed: false,
-  })
-  const [errors, setErrors] = useState({
-    events: null, orders: null, orgOrders: null, stats: null, resale: null, feed: null,
+  const events = useEvents({ user: auth.user, userRole: auth.userRole, setLoad, setErr })
+
+  const orders = useOrders({
+    user: auth.user, events: events.events,
+    loadEvents: events.loadEvents, loadMyEvents: events.loadMyEvents,
+    setLoad, setErr,
   })
 
-  const setLoad = (k, v) => setLoading((p) => ({ ...p, [k]: v }))
-  const setErr  = (k, v) => setErrors((p) => ({ ...p, [k]: v }))
+  const resale = useResale({
+    user: auth.user, events: events.events,
+    loadEvents: events.loadEvents, loadMyOrders: orders.loadMyOrders,
+    setLoad, setErr,
+  })
 
-  const setCart = useCallback((v) => {
-    setCartState(v)
-    try { localStorage.setItem('om_cart', JSON.stringify(v)) } catch {}
-  }, [])
+  const cart = useCart({
+    user: auth.user, events: events.events,
+    loadEvents: events.loadEvents, loadMyOrders: orders.loadMyOrders,
+    loadResaleListings: resale.loadResaleListings,
+  })
 
-  // ── LOAD EVENTS ────────────────────────────────────────────
-  // `silent` skips the loading flag — used by the realtime subscription below
-  // so a background ticket-count refresh doesn't flash the whole grid to a
-  // spinner for every visitor whenever anyone's purchase completes.
-  const loadEvents = useCallback(async (silent = false) => {
-    if (!silent) setLoad('events', true)
-    setErr('events', null)
+  const feed = useFeed({ user: auth.user, eventsRef: events.eventsRef, setLoad, setErr })
+  const push = usePush({ user: auth.user })
+  const invitations = useInvitations({ user: auth.user })
+  const admin = useOrganizerAdmin({ user: auth.user })
+  const contact = useContact({ user: auth.user })
 
-    const { data, error } = await supabase
-      .from('events')
-      .select(`
-        id, title, description, city, venue, category,
-        event_date, emoji, image_url, status, organizer_id,
-        profiles:organizer_id (full_name, business_name, account_type),
-        ticket_types (id, name, price_cfa, quantity_total, quantity_sold)
-      `)
-      .eq('status', 'published')
-      .order('event_date', { ascending: true })
+  const [justPaidOrder, setJustPaidOrder] = useState(null)
 
-    if (!silent) setLoad('events', false)
-
-    if (error) {
-      console.error('loadEvents:', error)
-      setErr('events', error.message)
-      setEventsState(DEFAULT_EVENTS)
-      return DEFAULT_EVENTS
+  // ── Cross-domain orchestration for event mutations ──────────────────
+  // Same conditions/order the original inline createEvent/deleteEvent used:
+  // refresh organizer stats + orders only when the acting user is an
+  // organizer/admin, using the fresh events array the mutation just produced.
+  const createEvent = useCallback(async (ev) => {
+    const result = await events.createEvent(ev)
+    if (!result) return null
+    const { created, freshEvents } = result
+    if (auth.userRole === 'organizer' || auth.userRole === 'admin') {
+      await orders.loadOrganizerStats(auth.user.id)
+      await orders.loadOrganizerOrders(auth.user.id, freshEvents)
     }
+    return created
+  }, [events, orders, auth.userRole, auth.user])
 
-    const shaped = (data || []).map(shapeEvent)
-    setEventsState(shaped)
-    return shaped
-  }, [])
-
-  // ── LOAD MY EVENTS (organizer's own, any status) ────────────
-  // Separate from `loadEvents` (public, published-only) so an organizer
-  // still sees their own pending/cancelled events in "Mes Événements"
-  // while those stay hidden from the public listing until an admin
-  // approves them.
-  const [myEventsAll, setMyEventsAll] = useState([])
-  const loadMyEvents = useCallback(async (userId) => {
-    if (!userId) return []
-    const { data, error } = await supabase
-      .from('events')
-      .select(`
-        id, title, description, city, venue, category,
-        event_date, emoji, image_url, status, organizer_id,
-        ticket_types (id, name, price_cfa, quantity_total, quantity_sold)
-      `)
-      .eq('organizer_id', userId)
-      .order('event_date', { ascending: true })
-
-    if (error) { console.error('loadMyEvents:', error); return [] }
-    const shaped = (data || []).map(shapeEvent)
-    setMyEventsAll(shaped)
-    return shaped
-  }, [])
-
-  // ── LOAD PENDING EVENTS (admin moderation queue) ────────────
-  const loadPendingEvents = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('events')
-      .select(`
-        id, title, description, city, venue, category,
-        event_date, emoji, image_url, status, organizer_id,
-        profiles:organizer_id (full_name, business_name, account_type, email),
-        ticket_types (id, name, price_cfa, quantity_total, quantity_sold)
-      `)
-      .eq('status', 'pending')
-      .order('event_date', { ascending: true })
-
-    if (error) { console.error('loadPendingEvents:', error); return [] }
-    return (data || []).map((e) => ({ ...shapeEvent(e), organizerEmail: e.profiles?.email }))
-  }, [])
-
-  const approveEvent = useCallback(async (eventId) => {
-    const { error } = await supabase.from('events').update({ status: 'published' }).eq('id', eventId)
-    if (error) { console.error('approveEvent:', error); return false }
-    await loadEvents()
+  const deleteEvent = useCallback(async (id) => {
+    const result = await events.deleteEvent(id)
+    if (!result) return false
+    const { freshEvents } = result
+    if (auth.userRole === 'organizer' || auth.userRole === 'admin') {
+      await orders.loadOrganizerOrders(auth.user?.id, freshEvents)
+      await orders.loadOrganizerStats(auth.user?.id)
+    }
     return true
-  }, [loadEvents])
+  }, [events, orders, auth.userRole, auth.user])
 
-  // ── LOAD RESALE LISTINGS ────────────────────────────────────
-  const loadResaleListings = useCallback(async () => {
-    setLoad('resale', true)
-    setErr('resale', null)
-
-    const { data, error } = await supabase
-      .from('ticket_listings')
-      .select('*')
-      .eq('status', 'active')
-      .order('event_date', { ascending: true })
-
-    setLoad('resale', false)
-
-    if (error) {
-      console.error('loadResaleListings:', error)
-      setErr('resale', error.message)
-      return
-    }
-
-    setResaleListings(data || [])
-  }, [])
-
-  // ── LOAD USER ROLE ─────────────────────────────────────────
-  const loadUserRole = useCallback(async (userId) => {
-    if (!userId) return 'user'
-    const { data } = await supabase
-      .from('profiles')
-      .select('role, user_number, is_verified')
-      .eq('id', userId)
-      .single()
-    const role = data?.role || 'user'
-    setUserRole(role)
-    setUserNumber(data?.user_number || null)
-    setIsVerified(data?.is_verified || false)
-    return { role, userNumber: data?.user_number, isVerified: data?.is_verified || false }
-  }, [])
-
-  // ── LOAD FAVORITES ─────────────────────────────────────────
-  const loadFavorites = useCallback(async (userId) => {
-    if (!userId) return
-    const { data } = await supabase
-      .from('favorites')
-      .select('event_id')
-      .eq('user_id', userId)
-    setFavoritesState((data || []).map((f) => f.event_id))
-  }, [])
-
-  // ── LOAD MY ORDERS ─────────────────────────────────────────
-  const loadMyOrders = useCallback(async (userId, eventsData, userName = '') => {
-    if (!userId) return
-    setLoad('orders', true)
-    setErr('orders', null)
-
-    const { data, error } = await supabase
-      .from('orders')
-      .select(`
-        id, user_id, total_cfa, payment_method, payment_status, created_at,
-        order_items (id, event_id, ticket_type_id, quantity, unit_price_cfa, checked_in, is_resale, resold)
-      `)
-      .eq('user_id', userId)
-      .eq('payment_status', 'paid')
-      .order('created_at', { ascending: false })
-
-    setLoad('orders', false)
-
-    if (error) {
-      console.error('loadMyOrders:', error)
-      setErr('orders', error.message)
-      return
-    }
-
-    const src = eventsData || events
-    setMyOrders((data || []).map((o) => shapeMyOrder(o, src, userName)))
-  }, [events])
-
-  // ── LOAD ORGANIZER ORDERS ───────────────────────────────────
-  const loadOrganizerOrders = useCallback(async (userId, eventsData) => {
-    if (!userId) return
-    setLoad('orgOrders', true)
-    setErr('orgOrders', null)
-
-    const src = eventsData || events
-    const myEventIds = src.filter((e) => e.organizer === userId).map((e) => e.id)
-
-    if (!myEventIds.length) {
-      setOrganizerOrders([])
-      setLoad('orgOrders', false)
-      return
-    }
-
-    const { data, error } = await supabase
-      .from('organizer_attendees')
-      .select('*')
-      .in('event_id', myEventIds)
-      .order('purchased_at', { ascending: false })
-
-    setLoad('orgOrders', false)
-
-    if (error) {
-      console.error('loadOrganizerOrders:', error)
-      setErr('orgOrders', error.message)
-      return
-    }
-
-    const grouped = {}
-    for (const row of data || []) {
-      if (!grouped[row.order_id]) {
-        grouped[row.order_id] = {
-          id:        row.order_id,
-          userId:    row.attendee_id,
-          userName:  row.attendee_name  || 'Anonyme',
-          userEmail: row.attendee_email || '',
-          userPhone: row.attendee_phone || '',
-          date:      row.purchased_at,
-          method:    row.payment_method,
-          status:    row.payment_status || 'paid',
-          total:     0,
-          items:     [],
-        }
-      }
-      grouped[row.order_id].items.push({
-        id:          row.item_id,
-        eventId:     row.event_id,
-        eventTitle:  row.event_title,
-        ticketName:  row.ticket_type_name,
-        price:       row.unit_price_cfa,
-        qty:         row.quantity,
-        checkedIn:      row.checked_in,
-        checkedInCount: row.checked_in_count || 0,
-        checkedInAt:    row.checked_in_at,
-        isResale:       row.is_resale || false,
-        resold:         row.resold    || false,
-      })
-      grouped[row.order_id].total += row.unit_price_cfa * row.quantity
-    }
-
-    setOrganizerOrders(Object.values(grouped))
-  }, [events])
-
-  // ── LOAD ORGANIZER STATS ────────────────────────────────────
-  const loadOrganizerStats = useCallback(async (userId) => {
-    if (!userId) return
-    setLoad('stats', true)
-    setErr('stats', null)
-
-    const { data, error } = await supabase
-      .rpc('organizer_stats', { org_id: userId })
-
-    setLoad('stats', false)
-
-    if (error) {
-      console.error('loadOrganizerStats:', error)
-      setErr('stats', error.message)
-      return
-    }
-
-    setOrganizerStats(data)
-  }, [])
-
-  // ── REALTIME: live ticket sold count ───────────────────────
-  useEffect(() => {
-    const channel = supabase
-      .channel('ticket_types_sold')
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'ticket_types' }, () => {
-        loadEvents(true)
-      })
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
-  }, [loadEvents])
-
-  // ── REALTIME: notify when one of my orders gets marked paid ────
+  // ── REALTIME: notify when one of my orders gets marked paid ────────
   // Order completion can happen via the browser's own return-flow call OR
   // independently via the paydunya-webhook (e.g. if the browser never made
   // it back to the return URL). This subscription is what lets the "here
   // are your tickets" celebration fire in the second case too — it reacts
   // to the actual DB transition rather than relying solely on the redirect.
   useEffect(() => {
-    if (!user?.id) return
+    if (!auth.user?.id) return
     const channel = supabase
-      .channel(`my_orders_${user.id}`)
+      .channel(`my_orders_${auth.user.id}`)
       .on('postgres_changes', {
-        event: 'UPDATE', schema: 'public', table: 'orders', filter: `user_id=eq.${user.id}`,
+        event: 'UPDATE', schema: 'public', table: 'orders', filter: `user_id=eq.${auth.user.id}`,
       }, (payload) => {
         if (payload.new.payment_status === 'paid' && payload.old?.payment_status !== 'paid') {
           setJustPaidOrder({ orderId: payload.new.id, at: Date.now() })
-          loadEvents(true)
-          loadMyOrders(user.id, eventsRef.current, user.name)
+          events.loadEvents(true)
+          orders.loadMyOrders(auth.user.id, events.eventsRef.current, auth.user.name)
         }
       })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
-  }, [user?.id, user?.name, loadEvents, loadMyOrders])
+  }, [auth.user?.id, auth.user?.name, events.loadEvents, orders.loadMyOrders]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── AUTH STATE ─────────────────────────────────────────────
+  // ── AUTH STATE ───────────────────────────────────────────────────
   useEffect(() => {
-    loadEvents()
-    loadResaleListings()
+    events.loadEvents()
+    resale.loadResaleListings()
 
     supabase.auth.getSession().then(({ data }) => {
       const u = data.session?.user
       if (u) {
         const profile = { id: u.id, name: u.user_metadata?.full_name || u.email, email: u.email }
-        setUserState(profile)
-        loadUserRole(u.id)
-        loadFavorites(u.id)
+        auth.setUserState(profile)
+        auth.loadUserRole(u.id)
+        auth.loadFavorites(u.id)
       }
     })
 
@@ -397,17 +122,13 @@ export function useStore() {
       const u = session?.user
       if (u) {
         const profile = { id: u.id, name: u.user_metadata?.full_name || u.email, email: u.email }
-        setUserState(profile)
-        loadUserRole(u.id)
-        loadFavorites(u.id)
+        auth.setUserState(profile)
+        auth.loadUserRole(u.id)
+        auth.loadFavorites(u.id)
       } else {
-        setUserState(null)
-        setUserRole('user')
-        setFavoritesState([])
-        setMyOrders([])
-        setOrganizerOrders([])
-        setOrganizerStats(null)
-        setApplications([])
+        auth.resetLocalState()
+        orders.resetLocalState()
+        admin.resetLocalState()
       }
     })
 
@@ -415,1172 +136,117 @@ export function useStore() {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!user?.id || events.length === 0) return
-    loadMyOrders(user.id, events, user.name)
-    loadOrganizerOrders(user.id, events)
-    if (userRole === 'organizer' || userRole === 'admin') {
-      loadOrganizerStats(user.id)
-      loadMyEvents(user.id)
+    if (!auth.user?.id || events.events.length === 0) return
+    orders.loadMyOrders(auth.user.id, events.events, auth.user.name)
+    orders.loadOrganizerOrders(auth.user.id, events.events)
+    if (auth.userRole === 'organizer' || auth.userRole === 'admin') {
+      orders.loadOrganizerStats(auth.user.id)
+      events.loadMyEvents(auth.user.id)
     }
-    if (userRole === 'admin') {
-      loadApplications()
+    if (auth.userRole === 'admin') {
+      admin.loadApplications()
     }
-  }, [user?.id, userRole, events.length]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [auth.user?.id, auth.userRole, events.events.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── AUTH ACTIONS ───────────────────────────────────────────
-  const login = useCallback(async (email, password) => {
-    if (!email || !password) return { ok: false, error: 'Email et mot de passe requis.' }
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) return { ok: false, error: error.message }
-    const u = data.user
-    const profile = { id: u.id, name: u.user_metadata?.full_name || u.email, email: u.email }
-    setUserState(profile)
-    await loadUserRole(u.id)
-    await loadFavorites(u.id)
-    return { ok: true, user: profile }
-  }, [loadUserRole, loadFavorites])
-
-  const signup = useCallback(async (name, email, password, businessInfo = {}) => {
-    if (!name || !email || !password) return { ok: false, error: 'Tous les champs sont requis.' }
-    if (password.length < 6) return { ok: false, error: 'Mot de passe trop court (6 car. min).' }
-    const { accountType = 'personal', businessName = '', phone = '' } = businessInfo
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: window.location.origin,
-        data: {
-          full_name: name,
-          account_type: accountType,
-          business_name: businessName,
-          phone,
-        },
-      },
-    })
-    if (error) return { ok: false, error: error.message }
-    const u = data.user
-    if (!u) return { ok: false, error: 'Création du compte impossible.' }
-    const profile = { id: u.id, name, email: u.email }
-
-    // Best-effort: persist the business info on the profile row too, so it's
-    // queryable/joinable (e.g. showing "Organisé par <business>" on events)
-    // without relying solely on auth metadata. Column may not exist yet on
-    // projects that haven't run the events-moderation-era migration — don't
-    // let that failure block signup, which has already succeeded above.
-    if (accountType === 'business') {
-      await supabase.from('profiles')
-        .update({ account_type: accountType, business_name: businessName, phone })
-        .eq('id', u.id)
-        .then(({ error: profErr }) => { if (profErr) console.warn('signup: could not persist business info:', profErr.message) })
+  // deleteAccount also needs to clear orders/admin local state — the
+  // original single-file version did this inline; auth.deleteAccount only
+  // knows how to reset what it owns, so the composition root finishes the
+  // job the same way the auth-state effect above does for a normal sign-out.
+  const deleteAccount = useCallback(async () => {
+    const result = await auth.deleteAccount()
+    if (result.ok) {
+      orders.resetLocalState()
+      admin.resetLocalState()
     }
-
-    // No session yet means email confirmation is required — don't mark the
-    // user as logged in until they actually have a real, authenticated
-    // session, otherwise authenticated requests (storage, RLS-protected
-    // inserts) fail silently because auth.uid() is null server-side.
-    if (!data.session) return { ok: true, user: profile, needsEmailConfirmation: true }
-    setUserState(profile)
-    await loadFavorites(u.id)
-    return { ok: true, user: profile }
-  }, [loadFavorites])
-
-  const googleLogin = useCallback(async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.origin },
-    })
-    if (error) throw error
-  }, [])
+    return result
+  }, [auth, orders, admin])
 
   const logout = useCallback(async () => {
-    await supabase.auth.signOut()
-    setUserState(null)
-    setUserRole('user')
-    setFavoritesState([])
-    setMyOrders([])
-    setOrganizerOrders([])
-    setOrganizerStats(null)
-    setApplications([])
-  }, [])
-
-  const updateProfile = useCallback(async (name, email, pwd) => {
-    if (!user) return null
-    const payload = { data: { full_name: name } }
-    if (email && email !== user.email) payload.email = email
-    if (pwd) payload.password = pwd
-    const { error } = await supabase.auth.updateUser(payload)
-    if (error) { console.error('updateProfile:', error); return null }
-    await supabase.from('profiles').update({ full_name: name }).eq('id', user.id)
-    const updated = { ...user, name, email: email || user.email }
-    setUserState(updated)
-    return updated
-  }, [user])
-
-  // Calls the delete-account edge function (service role) which: blocks if
-  // the user organizes upcoming events with sold tickets, purges their UGC
-  // (feed posts + storage), favorites, listings, push subs, verification
-  // docs, marks their past orders buyer_account_deleted=true (kept for
-  // admin/accounting, hidden from organizers), then deletes the auth user.
-  const deleteAccount = useCallback(async () => {
-    if (!user?.id) return { ok: false, error: 'Non connecté' }
-    const { data, error } = await supabase.functions.invoke('delete-account', { body: {} })
-    if (error || data?.error) return { ok: false, error: data?.error || error?.message || 'Erreur lors de la suppression.' }
-    await supabase.auth.signOut()
-    setUserState(null)
-    setUserRole('user')
-    setFavoritesState([])
-    setMyOrders([])
-    setOrganizerOrders([])
-    setOrganizerStats(null)
-    setApplications([])
-    return { ok: true }
-  }, [user])
-
-  const applyForOrganizer = useCallback(async (reason) => {
-    if (!user) return { ok: false, error: 'Non connecté' }
-    const { error } = await supabase.from('organizer_applications').insert({ user_id: user.id, reason })
-    if (error) return { ok: false, error: error.message }
-    return { ok: true }
-  }, [user])
-
-  // ── CART ───────────────────────────────────────────────────
-  const addToCart = useCallback((event, selections) => {
-    const today = new Date().toISOString().slice(0, 10)
-    if (event.date < today) return { error: 'Cet événement est déjà passé.' }
-    const items = Object.entries(selections)
-      .filter(([, qty]) => qty > 0)
-      .map(([key, qty]) => {
-        const [, tidx] = key.split('_')
-        const t = event.tickets[+tidx]
-        return {
-          id:           'c' + Date.now() + Math.random(),
-          eventId:      event.id,
-          eventTitle:   event.title,
-          ticketName:   t.name,
-          ticketTypeId: t.id,
-          price:        t.price,
-          qty,
-        }
-      })
-    if (!items.length) return false
-    const totalQty = items.reduce((s, i) => s + i.qty, 0)
-    if (totalQty > 10) return { error: 'Maximum 10 billets par commande.' }
-    setCart([...cart, ...items])
-    return true
-  }, [cart, setCart])
-
-  const removeFromCart = useCallback((id) => {
-    setCart(cart.filter((i) => i.id !== id))
-  }, [cart, setCart])
-
-  const clearCart = useCallback(() => setCart([]), [setCart])
-
-  // ── PURCHASE (simulation or PayDunya) ──────────────────────
-  const purchase = useCallback(async (method, phone = '', discountAmount = 0) => {
-    if (!user || !cart.length) return null
-
-    const today = new Date().toISOString().slice(0, 10)
-    const stale = cart.some((item) => {
-      const ev = events.find((e) => e.id === item.eventId)
-      return ev && ev.date < today
-    })
-    if (stale) return { error: 'Un des événements de votre panier est déjà passé. Retirez-le pour continuer.' }
-
-    const rawTotal = cart.reduce((s, i) => s + i.price * i.qty, 0)
-    const total    = Math.max(0, rawTotal - discountAmount)
-
-    if (PAYMENT_MODE === 'paydunya' && total > 0) {
-      // ── PayDunya flow ──
-      const returnUrl = `${window.location.origin}/?paydunya_return=1`
-      const cancelUrl = `${window.location.origin}/?paydunya_cancel=1`
-
-      const { data: pdData, error: pdError } = await supabase.functions.invoke('create-paydunya-payment', {
-        body: { cart, total, userId: user.id, returnUrl, cancelUrl, method, phone },
-      })
-
-      if (pdError || pdData?.response_code !== '00') {
-        console.error('PayDunya create error:', pdError || pdData)
-        return { pdError: pdData?.description || pdData?.response_text || pdError?.message || 'Erreur PayDunya' }
-      }
-
-      // Pre-create pending order
-      const orderId = crypto.randomUUID()
-      const { error: orderError } = await supabase.from('orders').insert({
-        id:             orderId,
-        user_id:        user.id,
-        buyer_name:     user.name,
-        buyer_email:    user.email,
-        total_cfa:      total,
-        payment_method: method,
-        payment_status: 'pending',
-        paydunya_token: pdData.token,
-      })
-      if (orderError) { console.error('purchase pending order:', orderError); return null }
-
-      // Persist what's needed to complete the order server-side — either when
-      // the browser returns, or via the PayDunya webhook if it never does.
-      const cartSnapshot = cart.map((i) => ({
-        eventId: i.eventId, ticketTypeId: i.ticketTypeId, qty: i.qty, price: i.price,
-        eventTitle: i.eventTitle, ticketName: i.ticketName,
-      }))
-      const { error: pendingError } = await supabase.from('pending_payments').insert({
-        token:   pdData.token,
-        order_id: orderId,
-        type:    'purchase',
-        user_id: user.id,
-        payload: { cart: cartSnapshot, total },
-      })
-      if (pendingError) { console.error('purchase pending_payments:', pendingError); return null }
-
-      // Kept for the "cancelled at checkout" UI path only — completion itself
-      // now happens server-side (verify-paydunya-payment / paydunya-webhook).
-      sessionStorage.setItem('om_pending', JSON.stringify({
-        type: 'purchase', orderId, token: pdData.token, userId: user.id,
-      }))
-
-      clearCart()
-      return { redirect: pdData.checkout_url }
-    }
-
-    // ── Simulation flow ──
-    const orderId = crypto.randomUUID()
-    const { error: orderError } = await supabase.from('orders').insert({
-      id:             orderId,
-      user_id:        user.id,
-      buyer_name:     user.name,
-      buyer_email:    user.email,
-      total_cfa:      total,
-      payment_method: method,
-      payment_status: 'paid',
-    })
-    if (orderError) { console.error('purchase order:', orderError); return null }
-
-    const orderItems = cart.map((item) => ({
-      order_id:       orderId,
-      event_id:       item.eventId,
-      ticket_type_id: item.ticketTypeId,
-      quantity:       item.qty,
-      unit_price_cfa: item.price,
-    }))
-
-    const { error: itemsError } = await supabase.from('order_items').insert(orderItems)
-    if (itemsError) { console.error('purchase items:', itemsError); return null }
-
-    for (const item of cart) {
-      const ev = events.find((e) => e.id === item.eventId)
-      const tk = ev?.tickets.find((t) => t.id === item.ticketTypeId)
-      if (!tk) continue
-      await supabase
-        .from('ticket_types')
-        .update({ quantity_sold: Math.min((tk.sold || 0) + item.qty, tk.total) })
-        .eq('id', item.ticketTypeId)
-    }
-
-    clearCart()
-    const freshEvents = await loadEvents()
-    await loadMyOrders(user.id, freshEvents, user.name)
-
-    // Email + push — fire-and-forget
-    const cartSnap = [...cart]
-    if (user.email) {
-      supabase.functions.invoke('send-ticket-email', { body: { to: user.email, userName: user.name, orderId, items: cartSnap.map(i => ({ eventTitle: i.eventTitle, ticketName: i.ticketName, price: i.price, qty: i.qty })), total, method } }).catch(console.error)
-    }
-    supabase.from('push_subscriptions').select('endpoint,p256dh,auth_key').eq('user_id', user.id).then(({ data: subs }) => {
-      for (const s of subs ?? []) {
-        supabase.functions.invoke('send-push', { body: { subscription: { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth_key } }, title: '🎉 Paiement confirmé !', body: `Vos ${cartSnap.reduce((n,i)=>n+i.qty,0)} billet(s) sont prêts.`, url: window.location.origin } }).catch(console.error)
-      }
-    })
-
-    return { ok: true, orderId }
-  }, [user, cart, events, clearCart, loadEvents, loadMyOrders])
-
-  // ── VERIFY PAYDUNYA RETURN ─────────────────────────────────
-  // Order completion (order_items, ticket counts, payment_status, resale
-  // transfer, email/push) all happens server-side now — in
-  // verify-paydunya-payment, which is the same code path the paydunya-webhook
-  // hits. This call just asks "is it done yet?" and refreshes the UI; it's
-  // safe to call even if the webhook already completed the order.
-  const verifyPaydunyaReturn = useCallback(async () => {
-    const raw = sessionStorage.getItem('om_pending')
-    if (!raw) return { cancelled: true }
-
-    const pending = JSON.parse(raw)
-    sessionStorage.removeItem('om_pending')
-
-    const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-paydunya-payment', {
-      body: { token: pending.token },
-    })
-
-    if (verifyError || verifyData?.status !== 'completed') {
-      return { cancelled: true }
-    }
-
-    const freshEvents = await loadEvents()
-    const uid = pending.userId || user?.id
-    if (uid) await loadMyOrders(uid, freshEvents, user?.name || '')
-    await loadResaleListings()
-
-    return { ok: true, orderId: pending.orderId }
-  }, [user, loadEvents, loadMyOrders, loadResaleListings])
-
-  // ── RESALE: list a ticket ───────────────────────────────────
-  const listTicketForResale = useCallback(async ({
-    orderItemId, orderId, eventId, ticketTypeId,
-    eventTitle, eventDate, eventCity, eventEmoji, eventImageUrl,
-    ticketName, quantity, originalPrice, askPrice,
-  }) => {
-    if (!user?.id) return null
-
-    // Check not already listed
-    const { data: existing } = await supabase
-      .from('ticket_listings')
-      .select('id')
-      .eq('order_item_id', orderItemId)
-      .eq('status', 'active')
-      .single()
-    if (existing) return { error: 'Ce billet est déjà mis en vente.' }
-
-    const { data, error } = await supabase
-      .from('ticket_listings')
-      .insert({
-        seller_id:       user.id,
-        order_id:        orderId,
-        order_item_id:   orderItemId,
-        event_id:        eventId,
-        ticket_type_id:  ticketTypeId,
-        event_title:     eventTitle,
-        event_date:      eventDate,
-        event_city:      eventCity  || '',
-        event_emoji:     eventEmoji || '🎟️',
-        event_image_url: eventImageUrl || null,
-        ticket_name:     ticketName,
-        quantity:        quantity || 1,
-        original_price:  originalPrice || 0,
-        ask_price_cfa:   askPrice,
-      })
-      .select()
-      .single()
-
-    if (error) { console.error('listTicketForResale:', error); return null }
-    await loadResaleListings()
-    await loadMyOrders(user.id, events, user.name)
-    return data
-  }, [user, events, loadResaleListings, loadMyOrders])
-
-  // ── RESALE: cancel a listing ────────────────────────────────
-  const cancelResaleListing = useCallback(async (listingId) => {
-    const { error } = await supabase
-      .from('ticket_listings')
-      .update({ status: 'cancelled' })
-      .eq('id', listingId)
-      .eq('seller_id', user?.id)
-    if (error) { console.error('cancelResaleListing:', error); return false }
-    await loadResaleListings()
-    await loadMyOrders(user?.id, events, user?.name)
-    return true
-  }, [user, events, loadResaleListings, loadMyOrders])
-
-  // ── RESALE: buy a listing ───────────────────────────────────
-  const buyResaleListing = useCallback(async (listing, method = 'simulation', phone = '') => {
-    if (!user?.id) return null
-    if (listing.seller_id === user.id) return { error: 'Vous ne pouvez pas acheter votre propre annonce.' }
-
-    const fee    = Math.round(listing.ask_price_cfa * 0.10)
-    const total  = listing.ask_price_cfa + fee
-    const buyerOrderId = crypto.randomUUID()
-
-    if (PAYMENT_MODE === 'paydunya') {
-      const returnUrl = `${window.location.origin}/?paydunya_return=1`
-      const cancelUrl = `${window.location.origin}/?paydunya_cancel=1`
-
-      const fakeCart = [{
-        eventTitle: listing.event_title,
-        ticketName: `${listing.ticket_name} (revente)`,
-        qty:        listing.quantity,
-        price:      listing.ask_price_cfa + fee,
-      }]
-
-      const { data: pdData, error: pdError } = await supabase.functions.invoke('create-paydunya-payment', {
-        body: { cart: fakeCart, total, userId: user.id, returnUrl, cancelUrl, method, phone },
-      })
-
-      if (pdError || pdData?.response_code !== '00') {
-        console.error('PayDunya resale error:', pdError || pdData)
-        return null
-      }
-
-      // Reserve listing
-      await supabase.from('ticket_listings').update({ status: 'reserved', buyer_id: user.id }).eq('id', listing.id)
-
-      // Pre-create pending order
-      await supabase.from('orders').insert({
-        id:             buyerOrderId,
-        user_id:        user.id,
-        buyer_name:     user.name,
-        buyer_email:    user.email,
-        total_cfa:      total,
-        payment_method: method,
-        payment_status: 'pending',
-        paydunya_token: pdData.token,
-      })
-
-      await supabase.from('pending_payments').insert({
-        token:    pdData.token,
-        order_id: buyerOrderId,
-        type:     'resale',
-        user_id:  user.id,
-        payload: {
-          listingId:           listing.id,
-          eventId:             listing.event_id,
-          ticketTypeId:        listing.ticket_type_id,
-          quantity:            listing.quantity,
-          askPrice:            listing.ask_price_cfa,
-          originalOrderItemId: listing.order_item_id,
-        },
-      })
-
-      // Kept for the "cancelled at checkout" UI path only — completion itself
-      // now happens server-side (verify-paydunya-payment / paydunya-webhook).
-      sessionStorage.setItem('om_pending', JSON.stringify({
-        type: 'resale', orderId: buyerOrderId, token: pdData.token, listingId: listing.id, userId: user.id,
-      }))
-
-      return { redirect: pdData.checkout_url }
-    }
-
-    // ── Simulation flow ──
-    const { error: orderError } = await supabase.from('orders').insert({
-      id:             buyerOrderId,
-      user_id:        user.id,
-      buyer_name:     user.name,
-      buyer_email:    user.email,
-      total_cfa:      total,
-      payment_method: method || 'simulation',
-      payment_status: 'paid',
-    })
-    if (orderError) { console.error('buyResale order:', orderError); return null }
-
-    const { error: itemError } = await supabase.from('order_items').insert({
-      order_id:       buyerOrderId,
-      event_id:       listing.event_id,
-      ticket_type_id: listing.ticket_type_id,
-      quantity:       listing.quantity,
-      unit_price_cfa: listing.ask_price_cfa,
-      is_resale:      true,
-    })
-    if (itemError) { console.error('buyResale item:', itemError); return null }
-
-    // Mark original item as resold
-    await supabase.from('order_items').update({ resold: true }).eq('id', listing.order_item_id)
-
-    // Mark listing as sold
-    await supabase.from('ticket_listings').update({
-      status:         'sold',
-      buyer_id:       user.id,
-      buyer_order_id: buyerOrderId,
-      sold_at:        new Date().toISOString(),
-    }).eq('id', listing.id)
-
-    await loadResaleListings()
-    const freshEvents = await loadEvents()
-    await loadMyOrders(user.id, freshEvents, user.name)
-
-    return { ok: true, orderId: buyerOrderId }
-  }, [user, events, loadResaleListings, loadEvents, loadMyOrders])
-
-  // ── FAVORITES ──────────────────────────────────────────────
-  const toggleFavorite = useCallback(async (eventId) => {
-    if (!user?.id) return false
-    const isFav = favorites.includes(eventId)
-    if (isFav) {
-      const { error } = await supabase.from('favorites').delete().eq('user_id', user.id).eq('event_id', eventId)
-      if (error) { console.error('toggleFavorite remove:', error); return false }
-      setFavoritesState(favorites.filter((f) => f !== eventId))
-    } else {
-      const { error } = await supabase.from('favorites').insert({ user_id: user.id, event_id: eventId })
-      if (error) { console.error('toggleFavorite add:', error); return false }
-      setFavoritesState([...favorites, eventId])
-    }
-    return true
-  }, [user, favorites])
-
-  // ── EVENT MANAGEMENT ───────────────────────────────────────
-  const createEvent = useCallback(async (ev) => {
-    if (!user?.id) return null
-
-    const { data: created, error } = await supabase
-      .from('events')
-      .insert({
-        organizer_id: user.id,
-        title:        ev.title,
-        description:  ev.desc || '',
-        city:         ev.city || '',
-        venue:        ev.location || '',
-        category:     ev.category || '',
-        event_date:   `${ev.date}T${ev.time || '20:00'}:00`,
-        emoji:        ev.emoji || '🎟️',
-        image_url:    ev.imageUrl || null,
-        is_private:   ev.isPrivate || false,
-        // New events wait for admin review before they're publicly visible —
-        // loadEvents() only ever selects status='published'.
-        status:       'pending',
-      })
-      .select()
-      .single()
-
-    if (error) { console.error('createEvent:', error); return null }
-
-    if (ev.tickets?.length) {
-      const { error: tkErr } = await supabase.from('ticket_types').insert(
-        ev.tickets.map((t) => ({
-          event_id:       created.id,
-          name:           t.name,
-          price_cfa:      t.price,
-          quantity_total: t.total,
-          quantity_sold:  0,
-        }))
-      )
-      if (tkErr) { console.error('createEvent tickets:', tkErr); return null }
-    }
-
-    const freshEvents = await loadEvents()
-    await loadMyEvents(user.id)
-    if (userRole === 'organizer' || userRole === 'admin') {
-      await loadOrganizerStats(user.id)
-      await loadOrganizerOrders(user.id, freshEvents)
-    }
-    return created
-  }, [user, userRole, loadEvents, loadMyEvents, loadOrganizerStats, loadOrganizerOrders])
-
-  const deleteEvent = useCallback(async (id) => {
-    const { error } = await supabase.from('events').delete().eq('id', id)
-    if (error) { console.error('deleteEvent:', error); return false }
-    const freshEvents = await loadEvents()
-    if (user?.id) await loadMyEvents(user.id)
-    if (userRole === 'organizer' || userRole === 'admin') {
-      await loadOrganizerOrders(user?.id, freshEvents)
-      await loadOrganizerStats(user?.id)
-    }
-    return true
-  }, [user, userRole, loadEvents, loadMyEvents, loadOrganizerOrders, loadOrganizerStats])
-
-  const updateEvent = useCallback(async (eventId, ev) => {
-    const { error } = await supabase
-      .from('events')
-      .update({
-        title:       ev.title,
-        description: ev.desc,
-        city:        ev.city,
-        venue:       ev.location,
-        category:    ev.category,
-        event_date:  `${ev.date}T${ev.time || '20:00'}:00`,
-        emoji:       ev.emoji || '🎟️',
-        image_url:   ev.imageUrl || null,
-        is_private:  ev.isPrivate || false,
-      })
-      .eq('id', eventId)
-    if (error) { console.error('updateEvent:', error); return false }
-
-    // Re-sync ticket types: update existing (preserving IDs/sold counts), add new, remove deleted
-    if (ev.tickets?.length) {
-      const { data: existing } = await supabase
-        .from('ticket_types')
-        .select('id, name, quantity_sold')
-        .eq('event_id', eventId)
-
-      const existingByName = {}
-      for (const t of existing || []) existingByName[t.name] = t
-
-      const newNames = new Set(ev.tickets.map(t => t.name))
-
-      // Delete removed ticket types
-      const toDelete = (existing || []).filter(t => !newNames.has(t.name)).map(t => t.id)
-      if (toDelete.length) await supabase.from('ticket_types').delete().in('id', toDelete)
-
-      for (const t of ev.tickets) {
-        if (existingByName[t.name]) {
-          // Update existing — preserve ID and sold count
-          await supabase.from('ticket_types')
-            .update({ price_cfa: t.price, quantity_total: t.total })
-            .eq('id', existingByName[t.name].id)
-        } else {
-          // Insert new
-          await supabase.from('ticket_types').insert({
-            event_id: eventId, name: t.name,
-            price_cfa: t.price, quantity_total: t.total, quantity_sold: 0,
-          })
-        }
-      }
-    }
-
-    await loadEvents()
-    if (user?.id) await loadMyEvents(user.id)
-    return true
-  }, [user, loadEvents, loadMyEvents])
-
-  // ── REFUND ORDER ───────────────────────────────────────────
-  const refundOrder = useCallback(async (orderId) => {
-    const { error } = await supabase.from('orders').update({ payment_status: 'refunded' }).eq('id', orderId)
-    if (error) { console.error('refundOrder:', error); return false }
-
-    const { data: items } = await supabase.from('order_items').select('ticket_type_id, quantity, is_resale').eq('order_id', orderId)
-    for (const item of items || []) {
-      if (item.is_resale) continue // resale tickets don't affect quantity_sold
-      const tk = events.flatMap(e => e.tickets).find(t => t.id === item.ticket_type_id)
-      if (!tk) continue
-      await supabase.from('ticket_types')
-        .update({ quantity_sold: Math.max(0, (tk.sold || 0) - item.quantity) })
-        .eq('id', item.ticket_type_id)
-    }
-
-    await loadEvents()
-    await loadOrganizerOrders(user?.id)
-    return true
-  }, [user, events, loadEvents, loadOrganizerOrders])
-
-  // ── CHECK-IN ───────────────────────────────────────────────
-  const checkinPurchase = useCallback(async (purchaseId, eventId = null) => {
-    const order = organizerOrders.find((p) => p.id === purchaseId)
-    if (!order) return false
-
-    const relevantItems = eventId
-      ? order.items.filter((i) => i.eventId === eventId && !i.resold)
-      : order.items.filter((i) => !i.resold)
-
-    if (!relevantItems.length) return false
-
-    const shouldCheckIn = !relevantItems.every((i) => i.checkedIn)
-    const ids = relevantItems.map((i) => i.id)
-
-    const { error } = await supabase.from('order_items').update({
-      checked_in:       shouldCheckIn,
-      checked_in_count: shouldCheckIn ? relevantItems.map(i => i.qty) : 0,
-      checked_in_at:    shouldCheckIn ? new Date().toISOString() : null,
-      checked_in_by:    user?.id,
-    }).in('id', ids)
-
-    if (error) { console.error('checkin:', error); return false }
-
-    await loadOrganizerOrders(user?.id)
-    await loadMyOrders(user?.id, undefined, user?.name)
-    return true
-  }, [organizerOrders, user, loadOrganizerOrders, loadMyOrders])
-
-  // Partial check-in: validate `count` tickets for a specific order item
-  const checkinPartial = useCallback(async (orderItemId, count) => {
-    const order = organizerOrders.find(p => p.items.some(i => i.id === orderItemId))
-    if (!order) return { error: 'Commande introuvable.' }
-    const item = order.items.find(i => i.id === orderItemId)
-    if (!item) return { error: 'Billet introuvable.' }
-
-    const newCount = Math.min((item.checkedInCount || 0) + count, item.qty)
-    const fullyIn  = newCount >= item.qty
-
-    const { error } = await supabase.from('order_items').update({
-      checked_in_count: newCount,
-      checked_in:       fullyIn,
-      checked_in_at:    new Date().toISOString(),
-      checked_in_by:    user?.id,
-    }).eq('id', orderItemId)
-
-    if (error) return { error: error.message }
-    await loadOrganizerOrders(user?.id)
-    await loadMyOrders(user?.id, undefined, user?.name)
-    return { ok: true, validated: count, total: item.qty, newCount }
-  }, [organizerOrders, user, loadOrganizerOrders, loadMyOrders])
-
-  // Lookup by QR payload or short ref, return order info without checking in
-  const lookupByRef = useCallback((ref) => {
-    // QR payload format: OUIMOOVE|<uuid>|<title>|<total>
-    const clean = ref.includes('|') ? ref.split('|')[1] : ref.trim()
-    const lower = clean.toLowerCase()
-    const order = organizerOrders.find(p => p.id.toLowerCase().startsWith(lower) || p.id.toLowerCase() === lower)
-    if (!order) return null
-    return order
-  }, [organizerOrders])
-
-  // lookup order by short ref (first 8 chars of UUID) and check in (all at once)
-  const checkinByRef = useCallback(async (ref, eventId = null) => {
-    const lower = ref.trim().toLowerCase()
-    const order = organizerOrders.find(p => p.id.toLowerCase().startsWith(lower))
-    if (!order) return { error: 'Référence introuvable.' }
-
-    const relevantItems = eventId
-      ? order.items.filter(i => i.eventId === eventId && !i.resold)
-      : order.items.filter(i => !i.resold)
-
-    if (!relevantItems.length) return { error: 'Aucun billet valide pour cet événement.' }
-
-    const alreadyIn = relevantItems.every(i => i.checkedIn)
-    if (alreadyIn) return { already: true, order }
-
-    const { error } = await supabase.from('order_items').update({
-      checked_in:       true,
-      checked_in_count: null, // will be set per item below
-      checked_in_at:    new Date().toISOString(),
-      checked_in_by:    user?.id,
-    }).in('id', relevantItems.map(i => i.id))
-
-    if (error) return { error: error.message }
-    // set count = qty for each
-    for (const item of relevantItems) {
-      await supabase.from('order_items').update({ checked_in_count: item.qty }).eq('id', item.id)
-    }
-    await loadOrganizerOrders(user?.id)
-    await loadMyOrders(user?.id, undefined, user?.name)
-    return { ok: true, order }
-  }, [organizerOrders, user, loadOrganizerOrders, loadMyOrders])
-
-  // ── ADMIN ──────────────────────────────────────────────────
-  const loadApplications = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('organizer_applications')
-      .select('id, user_id, reason, status, created_at, profiles:user_id (full_name, email)')
-      .eq('status', 'pending')
-      .order('created_at', { ascending: false })
-    if (error) { console.error('loadApplications:', error); return }
-    setApplications(
-      (data || []).map((a) => ({
-        id:        a.id,
-        userId:    a.user_id,
-        userName:  a.profiles?.full_name || a.profiles?.email || 'Inconnu',
-        userEmail: a.profiles?.email || '',
-        reason:    a.reason,
-        status:    a.status,
-        date:      a.created_at,
-      }))
-    )
-  }, [])
-
-  const becomeOrganizer = useCallback(async () => {
-    if (!user) return false
-    const { error } = await supabase.rpc('self_become_organizer')
-    if (error) { console.error('becomeOrganizer:', error); return false }
-    setUserRole('organizer')
-    return true
-  }, [user])
-
-  const promoteToOrganizer = useCallback(async (targetUserId, applicationId) => {
-    const { error } = await supabase.rpc('promote_to_organizer', { target_user_id: targetUserId })
-    if (error) { console.error('promoteToOrganizer:', error); return false }
-    if (applicationId) {
-      await supabase.from('organizer_applications')
-        .update({ status: 'approved', reviewed_at: new Date().toISOString(), reviewed_by: user?.id })
-        .eq('id', applicationId)
-    }
-    await loadApplications()
-    return true
-  }, [user, loadApplications])
-
-  const rejectApplication = useCallback(async (applicationId) => {
-    const { error } = await supabase.from('organizer_applications')
-      .update({ status: 'rejected', reviewed_at: new Date().toISOString(), reviewed_by: user?.id })
-      .eq('id', applicationId)
-    if (error) { console.error('rejectApplication:', error); return false }
-    await loadApplications()
-    return true
-  }, [user, loadApplications])
-
-  // ── UPLOAD EVENT IMAGE ─────────────────────────────────────
-  const uploadEventImage = useCallback(async (file) => {
-    if (!user?.id || !file) return null
-    const ext  = file.name.split('.').pop().toLowerCase()
-    const path = `${user.id}/${Date.now()}.${ext}`
-    const { error } = await supabase.storage
-      .from('event-images')
-      .upload(path, file, { upsert: true, contentType: file.type })
-    if (error) { console.error('uploadEventImage:', error); return null }
-    const { data: { publicUrl } } = supabase.storage.from('event-images').getPublicUrl(path)
-    return publicUrl
-  }, [user])
-
-  // ── EVENT FEED (crowd photos/videos) ────────────────────────
-  const shapeFeedPost = (p) => ({
-    id:         p.id,
-    userId:     p.user_id,
-    userName:   p.user_name,
-    eventId:    p.event_id,
-    eventTitle: p.events?.title  || 'Événement',
-    eventVenue: p.events?.venue  || '',
-    eventCity:  p.events?.city   || '',
-    eventEmoji: p.events?.emoji  || '🎟️',
-    mediaUrl:   p.media_url,
-    mediaType:  p.media_type,
-    caption:    p.caption || '',
-    createdAt:  p.created_at,
-  })
-
-  const loadFeedPosts = useCallback(async () => {
-    setLoad('feed', true)
-    setErr('feed', null)
-    const { data, error } = await supabase
-      .from('event_posts')
-      .select('*, events(title, venue, city, emoji)')
-      .order('created_at', { ascending: false })
-      .limit(100)
-    setLoad('feed', false)
-    if (error) {
-      console.error('loadFeedPosts:', error)
-      setErr('feed', error.message)
-      return
-    }
-    setFeedPosts((data || []).map(shapeFeedPost))
-  }, [])
-
-  const createFeedPost = useCallback(async ({ eventId, file, caption }) => {
-    if (!user?.id) return { ok: false, error: 'Non connecté' }
-    if (!eventId || !file) return { ok: false, error: 'Choisissez un événement et un fichier.' }
-
-    const isVideo = file.type.startsWith('video/')
-    const isImage = file.type.startsWith('image/')
-    if (!isVideo && !isImage) return { ok: false, error: 'Formats acceptés : photo ou vidéo.' }
-    if (file.size > 50 * 1024 * 1024) return { ok: false, error: 'Fichier trop volumineux (max 50 Mo).' }
-
-    const ext  = file.name.split('.').pop().toLowerCase()
-    const path = `${user.id}/${Date.now()}.${ext}`
-    const { error: upErr } = await supabase.storage
-      .from('event-posts')
-      .upload(path, file, { contentType: file.type })
-    if (upErr) {
-      console.error('createFeedPost upload:', upErr)
-      return { ok: false, error: "Impossible d'envoyer le fichier." }
-    }
-    const { data: { publicUrl } } = supabase.storage.from('event-posts').getPublicUrl(path)
-
-    const { data, error } = await supabase.from('event_posts').insert({
-      user_id:    user.id,
-      user_name:  user.name,
-      event_id:   eventId,
-      media_url:  publicUrl,
-      media_type: isVideo ? 'video' : 'image',
-      caption:    caption?.trim() || null,
-    }).select('*, events(title, venue, city, emoji)').single()
-
-    if (error) {
-      console.error('createFeedPost insert:', error)
-      return { ok: false, error: "Impossible de publier ce moment." }
-    }
-    setFeedPosts((prev) => [shapeFeedPost(data), ...prev])
-    return { ok: true }
-  }, [user])
-
-  const deleteFeedPost = useCallback(async (postId) => {
-    const post = feedPosts.find((p) => p.id === postId)
-    const { error } = await supabase.from('event_posts').delete().eq('id', postId)
-    if (error) { console.error('deleteFeedPost:', error); return false }
-    if (post) {
-      const marker = '/object/public/event-posts/'
-      const idx = post.mediaUrl.indexOf(marker)
-      if (idx !== -1) {
-        const path = post.mediaUrl.slice(idx + marker.length)
-        supabase.storage.from('event-posts').remove([path]).then(({ error: rmErr }) => {
-          if (rmErr) console.error('deleteFeedPost storage cleanup:', rmErr)
-        })
-      }
-    }
-    setFeedPosts((prev) => prev.filter((p) => p.id !== postId))
-    return true
-  }, [feedPosts])
-
-  // Realtime: new posts appear for everyone without a refresh.
-  // Subscribes once — reads eventsRef instead of depending on `events`
-  // directly, since loadEvents() produces a new array on every background
-  // refresh (e.g. the ticket-count realtime callback above) and would
-  // otherwise force this channel to unsubscribe/resubscribe constantly.
-  useEffect(() => {
-    const channel = supabase
-      .channel('event_posts_feed')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'event_posts' }, (payload) => {
-        setFeedPosts((prev) => {
-          if (prev.some((p) => p.id === payload.new.id)) return prev
-          const ev = eventsRef.current.find((e) => e.id === payload.new.event_id)
-          return [shapeFeedPost({
-            ...payload.new,
-            events: ev ? { title: ev.title, venue: ev.location, city: ev.city, emoji: ev.emoji } : null,
-          }), ...prev]
-        })
-      })
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
-  }, [])
-
-  // ── PUSH SUBSCRIPTIONS ─────────────────────────────────────
-  const VAPID_PUBLIC = import.meta.env.VITE_VAPID_PUBLIC_KEY ?? ''
-
-  const subscribePush = useCallback(async () => {
-    if (!user?.id || !VAPID_PUBLIC) return false
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false
-    try {
-      const reg = await navigator.serviceWorker.ready
-      let sub   = await reg.pushManager.getSubscription()
-      if (!sub) {
-        sub = await reg.pushManager.subscribe({
-          userVisibleOnly:      true,
-          applicationServerKey: VAPID_PUBLIC,
-        })
-      }
-      const j = sub.toJSON()
-      const { error } = await supabase.from('push_subscriptions').upsert({
-        user_id:  user.id,
-        endpoint: j.endpoint,
-        p256dh:   j.keys.p256dh,
-        auth_key: j.keys.auth,
-      }, { onConflict: 'user_id,endpoint' })
-      return !error
-    } catch (e) { console.error('subscribePush:', e); return false }
-  }, [user, VAPID_PUBLIC])
-
-  const unsubscribePush = useCallback(async () => {
-    if (!user?.id || !('serviceWorker' in navigator)) return
-    try {
-      const reg = await navigator.serviceWorker.ready
-      const sub = await reg.pushManager.getSubscription()
-      if (sub) {
-        await sub.unsubscribe()
-        await supabase.from('push_subscriptions').delete()
-          .eq('user_id', user.id).eq('endpoint', sub.endpoint)
-      }
-    } catch (e) { console.error('unsubscribePush:', e) }
-  }, [user])
-
-  // ── VERIFICATION ───────────────────────────────────────────
-  const submitVerification = useCallback(async (file) => {
-    if (!user) return { ok: false, error: 'Non connecté' }
-    const ext = file.name.split('.').pop()
-    const path = `${user.id}/id-card.${ext}`
-    const { error: upErr } = await supabase.storage
-      .from('verification-docs')
-      .upload(path, file, { upsert: true })
-    if (upErr) return { ok: false, error: upErr.message }
-    const { data: urlData } = supabase.storage.from('verification-docs').getPublicUrl(path)
-    const url = urlData?.publicUrl || path
-    const { error } = await supabase
-      .from('verification_requests')
-      .upsert({ user_id: user.id, id_card_url: url, status: 'pending', denial_reason: null }, { onConflict: 'user_id' })
-    if (error) return { ok: false, error: error.message }
-    return { ok: true }
-  }, [user])
-
-  const loadVerificationStatus = useCallback(async () => {
-    if (!user) return null
-    const { data } = await supabase
-      .from('verification_requests')
-      .select('status, denial_reason, created_at')
-      .eq('user_id', user.id)
-      .single()
-    return data
-  }, [user])
-
-  const loadVerificationRequests = useCallback(async () => {
-    const { data } = await supabase
-      .from('verification_requests')
-      .select('id, user_id, id_card_url, status, denial_reason, created_at, profiles(name, email, user_number)')
-      .eq('status', 'pending')
-      .order('created_at', { ascending: true })
-    return data || []
-  }, [])
-
-  const approveVerification = useCallback(async (targetUserId) => {
-    const { error } = await supabase.rpc('approve_verification', { target_user_id: targetUserId })
-    if (error) { console.error('approveVerification:', error); return false }
-    return true
-  }, [])
-
-  const denyVerification = useCallback(async (targetUserId, reason) => {
-    const { error } = await supabase.rpc('deny_verification', { target_user_id: targetUserId, reason })
-    if (error) { console.error('denyVerification:', error); return false }
-    return true
-  }, [])
-
-  // ── CITIES ─────────────────────────────────────────────────
-  const loadCities = useCallback(async () => {
-    const { data } = await supabase.from('cities').select('name').order('name')
-    return (data || []).map(r => r.name)
-  }, [])
-
-  const requestCity = useCallback(async (name) => {
-    if (!user) return { ok: false, error: 'Non connecté' }
-    const trimmed = name.trim()
-    if (!trimmed) return { ok: false, error: 'Nom de ville requis' }
-    const { error } = await supabase.from('city_requests').insert({ name: trimmed, requested_by: user.id })
-    if (error) return { ok: false, error: error.message }
-    return { ok: true }
-  }, [user])
-
-  const loadCityRequests = useCallback(async () => {
-    const { data } = await supabase
-      .from('city_requests')
-      .select('id, name, status, created_at, profiles:requested_by(name, email)')
-      .eq('status', 'pending')
-      .order('created_at', { ascending: true })
-    return data || []
-  }, [])
-
-  const approveCityRequest = useCallback(async (requestId, cityName) => {
-    const { error: insertErr } = await supabase.from('cities').insert({ name: cityName }).select().single()
-    if (insertErr && !insertErr.message.includes('duplicate')) {
-      console.error('approveCityRequest insert:', insertErr); return false
-    }
-    const { error } = await supabase.from('city_requests').update({ status: 'approved' }).eq('id', requestId)
-    if (error) { console.error('approveCityRequest update:', error); return false }
-    return true
-  }, [])
-
-  const denyCityRequest = useCallback(async (requestId) => {
-    const { error } = await supabase.from('city_requests').update({ status: 'denied' }).eq('id', requestId)
-    if (error) { console.error('denyCityRequest:', error); return false }
-    return true
-  }, [])
-
-  // ── INVITATIONS ────────────────────────────────────────────
-  const inviteToEvent = useCallback(async (eventId, email, eventTitle, eventDate, eventCity) => {
-    if (!user) return { ok: false, error: 'Non connecté' }
-    const { data, error } = await supabase
-      .from('event_invitations')
-      .upsert({ event_id: eventId, email: email.trim().toLowerCase(), invited_by: user.id, organizer_id: user.id }, { onConflict: 'event_id,email' })
-      .select('token')
-      .single()
-    if (error) { console.error('inviteToEvent:', error); return { ok: false, error: error.message } }
-    const inviteUrl = `${window.location.origin}/?invite=${data.token}`
-    // Send email (fire-and-forget)
-    supabase.functions.invoke('send-invitation', {
-      body: { to: email.trim(), inviterName: user.name, eventTitle, eventDate, eventCity, inviteUrl }
-    }).catch(console.error)
-    return { ok: true, token: data.token, inviteUrl }
-  }, [user])
-
-  const loadInvitations = useCallback(async (eventId) => {
-    const { data, error } = await supabase
-      .from('event_invitations')
-      .select('id,email,status,token,created_at')
-      .eq('event_id', eventId)
-      .order('created_at', { ascending: false })
-    if (error) return []
-    return data
-  }, [])
-
-  const getInvitationDetails = useCallback(async (token) => {
-    const { data, error } = await supabase.rpc('get_invitation_details', { invite_token: token })
-    if (error) return { ok: false, error: error.message }
-    return data
-  }, [])
-
-  const respondInvitation = useCallback(async (token, decision) => {
-    const { data, error } = await supabase.rpc('respond_invitation', { invite_token: token, decision })
-    if (error) return { ok: false, error: error.message }
-    return data
-  }, [])
-
-  // ── CONTACT ────────────────────────────────────────────────
-  const submitContact = useCallback(async ({ name, email, subject, message }) => {
-    if (!name?.trim() || !email?.trim() || !message?.trim()) {
-      return { ok: false, error: 'Veuillez remplir tous les champs requis.' }
-    }
-    const { error } = await supabase.from('contact_messages').insert({
-      name:    name.trim(),
-      email:   email.trim(),
-      subject: subject?.trim() || null,
-      message: message.trim(),
-      user_id: user?.id || null,
-    })
-    if (error) {
-      console.error('submitContact:', error)
-      return { ok: false, error: "Impossible d'envoyer le message. Réessayez." }
-    }
-    return { ok: true }
-  }, [user])
-
-  // ── REFRESH ────────────────────────────────────────────────
-  const refreshOrganizerData = useCallback(async () => {
-    if (!user?.id) return
-    await loadOrganizerOrders(user.id)
-    await loadOrganizerStats(user.id)
-    await loadMyEvents(user.id)
-  }, [user, loadOrganizerOrders, loadOrganizerStats, loadMyEvents])
-
-  // ── DERIVED ────────────────────────────────────────────────
-  const cartCount   = cart.reduce((s, i) => s + i.qty, 0)
-  const cartTotal   = cart.reduce((s, i) => s + i.price * i.qty, 0)
-  // Organizer's own events at any status (pending/published/cancelled) —
-  // distinct from the public `events` list, which only holds published ones.
-  const myEvents    = myEventsAll
-  const isOrganizer = userRole === 'organizer' || userRole === 'admin'
-  const isAdmin     = userRole === 'admin'
+    await auth.logout()
+    orders.resetLocalState()
+    admin.resetLocalState()
+  }, [auth, orders, admin])
+
+  const isOrganizer = auth.userRole === 'organizer' || auth.userRole === 'admin'
+  const isAdmin     = auth.userRole === 'admin'
 
   return {
-    user, userRole, userNumber, isVerified, isOrganizer, isAdmin,
-    events, cart, favorites,
-    myPurchases:    myOrders,
-    organizerOrders,
-    organizerStats,
-    purchases:      organizerOrders,
-    myOrders,
-    myEvents,
-    cartCount, cartTotal,
+    user: auth.user, userRole: auth.userRole, userNumber: auth.userNumber, isVerified: auth.isVerified,
+    isOrganizer, isAdmin,
+    events: events.events, cart: cart.cart, favorites: auth.favorites,
+    myPurchases:    orders.myOrders,
+    organizerOrders: orders.organizerOrders,
+    organizerStats:  orders.organizerStats,
+    purchases:      orders.organizerOrders,
+    myOrders:       orders.myOrders,
+    myEvents:       events.myEvents,
+    cartCount: cart.cartCount, cartTotal: cart.cartTotal,
     loading, errors,
-    resaleListings,
+    resaleListings: resale.resaleListings,
 
-    login, signup, googleLogin, logout, updateProfile, deleteAccount,
-    applyForOrganizer,
+    login: auth.login, signup: auth.signup, googleLogin: auth.googleLogin, logout, updateProfile: auth.updateProfile, deleteAccount,
+    applyForOrganizer: auth.applyForOrganizer,
 
-    addToCart, removeFromCart, clearCart,
+    addToCart: cart.addToCart, removeFromCart: cart.removeFromCart, clearCart: cart.clearCart,
 
-    purchase,
-    verifyPaydunyaReturn,
+    purchase: cart.purchase,
+    verifyPaydunyaReturn: cart.verifyPaydunyaReturn,
 
-    toggleFavorite,
+    toggleFavorite: auth.toggleFavorite,
 
-    createEvent, updateEvent, deleteEvent,
+    createEvent, updateEvent: events.updateEvent, deleteEvent,
 
-    listTicketForResale,
-    cancelResaleListing,
-    buyResaleListing,
-    loadResaleListings,
+    listTicketForResale: resale.listTicketForResale,
+    cancelResaleListing: resale.cancelResaleListing,
+    buyResaleListing:    resale.buyResaleListing,
+    loadResaleListings:  resale.loadResaleListings,
 
-    checkinPurchase, checkinByRef, checkinPartial, lookupByRef, refundOrder,
+    checkinPurchase: orders.checkinPurchase, checkinByRef: orders.checkinByRef,
+    checkinPartial:  orders.checkinPartial,  lookupByRef:  orders.lookupByRef,
+    refundOrder:     orders.refundOrder,
 
-    applications,
-    loadApplications,
-    becomeOrganizer,
-    promoteToOrganizer,
-    rejectApplication,
+    applications: admin.applications,
+    loadApplications: admin.loadApplications,
+    becomeOrganizer: auth.becomeOrganizer,
+    promoteToOrganizer: admin.promoteToOrganizer,
+    rejectApplication:  admin.rejectApplication,
 
-    uploadEventImage,
-    subscribePush,
-    unsubscribePush,
+    uploadEventImage: events.uploadEventImage,
+    subscribePush:   push.subscribePush,
+    unsubscribePush: push.unsubscribePush,
 
-    loadCities,
-    requestCity,
-    loadCityRequests,
-    approveCityRequest,
-    denyCityRequest,
+    loadCities: admin.loadCities,
+    requestCity: admin.requestCity,
+    loadCityRequests: admin.loadCityRequests,
+    approveCityRequest: admin.approveCityRequest,
+    denyCityRequest: admin.denyCityRequest,
 
-    loadMyEvents,
-    loadPendingEvents,
-    approveEvent,
+    loadMyEvents: events.loadMyEvents,
+    loadPendingEvents: events.loadPendingEvents,
+    approveEvent: events.approveEvent,
 
-    inviteToEvent,
-    loadInvitations,
-    getInvitationDetails,
-    respondInvitation,
+    inviteToEvent: invitations.inviteToEvent,
+    loadInvitations: invitations.loadInvitations,
+    getInvitationDetails: invitations.getInvitationDetails,
+    respondInvitation: invitations.respondInvitation,
 
-    submitVerification,
-    loadVerificationStatus,
-    loadVerificationRequests,
-    approveVerification,
-    denyVerification,
+    submitVerification: admin.submitVerification,
+    loadVerificationStatus: admin.loadVerificationStatus,
+    loadVerificationRequests: admin.loadVerificationRequests,
+    approveVerification: admin.approveVerification,
+    denyVerification: admin.denyVerification,
 
-    submitContact,
+    submitContact: contact.submitContact,
 
-    feedPosts,
-    loadFeedPosts,
-    createFeedPost,
-    deleteFeedPost,
+    feedPosts: feed.feedPosts,
+    loadFeedPosts: feed.loadFeedPosts,
+    createFeedPost: feed.createFeedPost,
+    deleteFeedPost: feed.deleteFeedPost,
 
     justPaidOrder,
 
-    refreshOrganizerData,
-    loadEvents,
-    loadOrganizerStats,
+    refreshOrganizerData: orders.refreshOrganizerData,
+    loadEvents: events.loadEvents,
+    loadOrganizerStats: orders.loadOrganizerStats,
   }
 }
