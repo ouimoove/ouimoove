@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { useStore } from './hooks/useStore.js'
 import { useToast } from './hooks/useToast.js'
 import { useCheckoutFlow } from './hooks/actions/useCheckoutFlow.js'
@@ -12,25 +12,38 @@ import { Hero } from './components/Hero.jsx'
 import { EventGrid } from './components/EventGrid.jsx'
 import { Footer } from './components/Footer.jsx'
 import { Toast } from './components/Toast.jsx'
-import { OnboardingModal, FaqModal, ContactModal, TermsModal, PrivacyModal } from './components/modals/InfoModals.jsx'
-import { DeleteAccountModal } from './components/modals/DeleteAccountModal.jsx'
-import { AuthModal } from './components/modals/AuthModal.jsx'
-import { EventDetailModal } from './components/modals/EventDetailModal.jsx'
-import { CartModal } from './components/modals/CartModal.jsx'
-import { CheckoutModal } from './components/modals/CheckoutModal.jsx'
-import { MyTicketsModal } from './components/modals/MyTicketsModal.jsx'
-import { FavoritesModal } from './components/modals/FavoritesModal.jsx'
-import { ProfileModal } from './components/modals/ProfileModal.jsx'
-import { OrganizerModal } from './components/modals/OrganizerModal.jsx'
-import { ResaleMarketModal } from './components/modals/ResaleMarketModal.jsx'
-import { FeedModal } from './components/modals/FeedModal.jsx'
-import { RSVPModal } from './components/modals/RSVPModal.jsx'
+
+// Every modal below is code-split: none of it is needed for first paint
+// (Navbar/Hero/EventGrid above stay eagerly bundled since that's the page
+// every visitor sees immediately), and most visitors will only ever open a
+// handful of these. Each chunk loads the first time its modal is opened —
+// see `openedModals` below for how a modal, once opened, stays mounted
+// exactly as it did before this split (so closing it doesn't lose its
+// internal state, e.g. OrganizerModal's selected tab).
+const OnboardingModal   = lazy(() => import('./components/modals/InfoModals.jsx').then(m => ({ default: m.OnboardingModal })))
+const FaqModal          = lazy(() => import('./components/modals/InfoModals.jsx').then(m => ({ default: m.FaqModal })))
+const ContactModal      = lazy(() => import('./components/modals/InfoModals.jsx').then(m => ({ default: m.ContactModal })))
+const TermsModal        = lazy(() => import('./components/modals/InfoModals.jsx').then(m => ({ default: m.TermsModal })))
+const PrivacyModal      = lazy(() => import('./components/modals/InfoModals.jsx').then(m => ({ default: m.PrivacyModal })))
+const DeleteAccountModal = lazy(() => import('./components/modals/DeleteAccountModal.jsx').then(m => ({ default: m.DeleteAccountModal })))
+const AuthModal         = lazy(() => import('./components/modals/AuthModal.jsx').then(m => ({ default: m.AuthModal })))
+const EventDetailModal  = lazy(() => import('./components/modals/EventDetailModal.jsx').then(m => ({ default: m.EventDetailModal })))
+const CartModal         = lazy(() => import('./components/modals/CartModal.jsx').then(m => ({ default: m.CartModal })))
+const CheckoutModal     = lazy(() => import('./components/modals/CheckoutModal.jsx').then(m => ({ default: m.CheckoutModal })))
+const MyTicketsModal    = lazy(() => import('./components/modals/MyTicketsModal.jsx').then(m => ({ default: m.MyTicketsModal })))
+const FavoritesModal    = lazy(() => import('./components/modals/FavoritesModal.jsx').then(m => ({ default: m.FavoritesModal })))
+const ProfileModal      = lazy(() => import('./components/modals/ProfileModal.jsx').then(m => ({ default: m.ProfileModal })))
+const OrganizerModal    = lazy(() => import('./components/modals/OrganizerModal.jsx').then(m => ({ default: m.OrganizerModal })))
+const ResaleMarketModal = lazy(() => import('./components/modals/ResaleMarketModal.jsx').then(m => ({ default: m.ResaleMarketModal })))
+const FeedModal         = lazy(() => import('./components/modals/FeedModal.jsx').then(m => ({ default: m.FeedModal })))
+const RSVPModal         = lazy(() => import('./components/modals/RSVPModal.jsx').then(m => ({ default: m.RSVPModal })))
 
 function App() {
   const store = useStore()
   const { toasts, toast } = useToast()
 
   const [modal,           setModal]           = useState(null)
+  const [openedModals,    setOpenedModals]    = useState(() => new Set())
   const [selectedEventId, setSelectedEventId] = useState(null)
   const [search,          setSearch]          = useState('')
   const [filterCity,      setFilterCity]      = useState('')
@@ -38,7 +51,14 @@ function App() {
   const [sortBy,          setSortBy]          = useState('date')
   const [cities,          setCities]          = useState([])
 
-  const open  = (m) => setModal(m)
+  // Marks a modal as "ever opened" the first time, which both shows it
+  // (via `modal`) and keeps its lazy chunk mounted from then on — closing
+  // afterward only hides it (same as the pre-split always-mounted
+  // components did), so no modal loses its internal state on close.
+  const open = (m) => {
+    setModal(m)
+    setOpenedModals((prev) => (prev.has(m) ? prev : new Set(prev).add(m)))
+  }
   const close = () => setModal(null)
 
   // ── Action hooks — each owns the toast-then-branch wiring for one modal
@@ -126,7 +146,10 @@ function App() {
     const hasFlow = params.get('paydunya_return') || params.get('paydunya_cancel') || params.get('invite') || params.get('event')
     if (hasFlow) return
     if (!localStorage.getItem('om_onboarded')) {
-      const t = setTimeout(() => setModal(m => m ?? 'onboarding'), 600)
+      const t = setTimeout(() => {
+        setModal(m => m ?? 'onboarding')
+        setOpenedModals((prev) => (prev.has('onboarding') ? prev : new Set(prev).add('onboarding')))
+      }, 600)
       return () => clearTimeout(t)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -230,154 +253,235 @@ function App() {
         onToggleFav={handleToggleFav}
       />
 
-      {/* ── Auth ── */}
-      <AuthModal
-        mode={modal === 'login' ? 'login' : modal === 'signup' ? 'signup' : null}
-        onClose={close}
-        onSwitch={(m) => open(m)}
-        onLogin={authActions.onLogin}
-        onSignup={authActions.onSignup}
-        onGoogle={authActions.onGoogle}
-      />
+      <Suspense fallback={null}>
+        {/* ── Auth ── */}
+        {(openedModals.has('login') || openedModals.has('signup')) && (
+          <AuthModal
+            mode={modal === 'login' ? 'login' : modal === 'signup' ? 'signup' : null}
+            onClose={close}
+            onSwitch={(m) => open(m)}
+            onLogin={authActions.onLogin}
+            onSignup={authActions.onSignup}
+            onGoogle={authActions.onGoogle}
+          />
+        )}
 
-      {/* ── Event detail ── */}
-      <EventDetailModal
-        open={modal === 'event'}
-        event={selectedEvent}
-        onClose={closeEvent}
-        onAddToCart={(selections) => requireAuth(() => checkout.handleAddToCart(selectedEvent, selections))}
-        toast={toast}
-      />
+        {/* ── Event detail ── */}
+        {openedModals.has('event') && (
+          <EventDetailModal
+            open={modal === 'event'}
+            event={selectedEvent}
+            onClose={closeEvent}
+            onAddToCart={(selections) => requireAuth(() => checkout.handleAddToCart(selectedEvent, selections))}
+            toast={toast}
+          />
+        )}
 
-      {/* ── Cart ── */}
-      <CartModal
-        open={modal === 'cart'}
-        cart={store.cart}
-        cartTotal={store.cartTotal}
-        onClose={close}
-        onRemove={(id) => { store.removeFromCart(id); toast('Retiré du panier', 'info') }}
-        onCheckout={() => open('checkout')}
-      />
+        {/* ── Cart ── */}
+        {openedModals.has('cart') && (
+          <CartModal
+            open={modal === 'cart'}
+            cart={store.cart}
+            cartTotal={store.cartTotal}
+            onClose={close}
+            onRemove={(id) => { store.removeFromCart(id); toast('Retiré du panier', 'info') }}
+            onCheckout={() => open('checkout')}
+          />
+        )}
 
-      {/* ── Checkout ── */}
-      <CheckoutModal
-        open={modal === 'checkout'}
-        cart={store.cart}
-        cartTotal={store.cartTotal}
-        onClose={close}
-        onConfirm={checkout.handlePurchase}
-      />
+        {/* ── Checkout ── */}
+        {openedModals.has('checkout') && (
+          <CheckoutModal
+            open={modal === 'checkout'}
+            cart={store.cart}
+            cartTotal={store.cartTotal}
+            onClose={close}
+            onConfirm={checkout.handlePurchase}
+          />
+        )}
 
-      {/* ── My Tickets ── */}
-      <MyTicketsModal
-        open={modal === 'tickets'}
-        purchases={store.myPurchases}
-        myListings={myListings}
-        onClose={close}
-        toast={toast}
-        onListForResale={ticketActions.onListForResale}
-        onCancelListing={ticketActions.onCancelListing}
-      />
+        {/* ── My Tickets ── */}
+        {openedModals.has('tickets') && (
+          <MyTicketsModal
+            open={modal === 'tickets'}
+            purchases={store.myPurchases}
+            myListings={myListings}
+            onClose={close}
+            toast={toast}
+            onListForResale={ticketActions.onListForResale}
+            onCancelListing={ticketActions.onCancelListing}
+          />
+        )}
 
-      {/* ── Favorites ── */}
-      <FavoritesModal
-        open={modal === 'favorites'}
-        events={store.events}
-        favorites={store.favorites}
-        onClose={close}
-        onOpenEvent={openEvent}
-        onToggleFav={handleToggleFav}
-      />
+        {/* ── Favorites ── */}
+        {openedModals.has('favorites') && (
+          <FavoritesModal
+            open={modal === 'favorites'}
+            events={store.events}
+            favorites={store.favorites}
+            onClose={close}
+            onOpenEvent={openEvent}
+            onToggleFav={handleToggleFav}
+          />
+        )}
 
-      {/* ── Profile ── */}
-      <ProfileModal
-        open={modal === 'profile'}
-        user={store.user}
-        userNumber={store.userNumber}
-        isVerified={store.isVerified}
-        isOrganizer={store.isOrganizer}
-        onClose={close}
-        onSave={profileActions.onSave}
-        onLogout={authActions.logoutFromProfile}
-        onDeleteAccount={() => open('deleteAccount')}
-        onApply={store.applyForOrganizer}
-        onSubscribePush={profileActions.onSubscribePush}
-        onUnsubscribePush={profileActions.onUnsubscribePush}
-        onSubmitVerification={profileActions.onSubmitVerification}
-        onLoadVerificationStatus={store.loadVerificationStatus}
-      />
+        {/* ── Profile ── */}
+        {openedModals.has('profile') && (
+          <ProfileModal
+            open={modal === 'profile'}
+            user={store.user}
+            userNumber={store.userNumber}
+            isVerified={store.isVerified}
+            isOrganizer={store.isOrganizer}
+            onClose={close}
+            onSave={profileActions.onSave}
+            onLogout={authActions.logoutFromProfile}
+            onDeleteAccount={() => open('deleteAccount')}
+            onApply={store.applyForOrganizer}
+            onSubscribePush={profileActions.onSubscribePush}
+            onUnsubscribePush={profileActions.onUnsubscribePush}
+            onSubmitVerification={profileActions.onSubmitVerification}
+            onLoadVerificationStatus={store.loadVerificationStatus}
+          />
+        )}
 
-      {/* ── Organizer Dashboard ── */}
-      <OrganizerModal
-        open={modal === 'organizer'}
-        user={store.user}
-        isAdmin={store.isAdmin}
-        myEvents={store.myEvents}
-        purchases={store.purchases}
-        organizerOrders={store.organizerOrders}
-        organizerStats={store.organizerStats}
-        applications={store.applications}
-        loading={store.loading}
-        errors={store.errors}
-        onClose={close}
-        onCreate={organizerActions.onCreate}
-        onUpdate={organizerActions.onUpdate}
-        onDelete={organizerActions.onDelete}
-        onRefund={organizerActions.onRefund}
-        onCheckin={organizerActions.onCheckin}
-        onCheckinByRef={store.checkinByRef}
-        onCheckinPartial={store.checkinPartial}
-        onLookupByRef={store.lookupByRef}
-        onRefresh={store.refreshOrganizerData}
-        onPromote={organizerActions.onPromote}
-        onReject={organizerActions.onReject}
-        onLoadApplications={store.loadApplications}
-        onUploadImage={store.uploadEventImage}
-        onInvite={store.inviteToEvent}
-        onLoadInvitations={store.loadInvitations}
-        cities={cities}
-        onRequestCity={organizerActions.onRequestCity}
-        onLoadCityRequests={store.loadCityRequests}
-        onApproveCityRequest={organizerActions.onApproveCityRequest}
-        onDenyCityRequest={organizerActions.onDenyCityRequest}
-        onLoadVerifRequests={store.loadVerificationRequests}
-        onApproveVerif={organizerActions.onApproveVerif}
-        onDenyVerif={organizerActions.onDenyVerif}
-        onLoadPendingEvents={store.loadPendingEvents}
-        onApproveEvent={organizerActions.onApproveEvent}
-        onRejectEvent={organizerActions.onRejectEvent}
-        toast={toast}
-      />
+        {/* ── Organizer Dashboard ── */}
+        {openedModals.has('organizer') && (
+          <OrganizerModal
+            open={modal === 'organizer'}
+            user={store.user}
+            isAdmin={store.isAdmin}
+            myEvents={store.myEvents}
+            purchases={store.purchases}
+            organizerOrders={store.organizerOrders}
+            organizerStats={store.organizerStats}
+            applications={store.applications}
+            loading={store.loading}
+            errors={store.errors}
+            onClose={close}
+            onCreate={organizerActions.onCreate}
+            onUpdate={organizerActions.onUpdate}
+            onDelete={organizerActions.onDelete}
+            onRefund={organizerActions.onRefund}
+            onCheckin={organizerActions.onCheckin}
+            onCheckinByRef={store.checkinByRef}
+            onCheckinPartial={store.checkinPartial}
+            onLookupByRef={store.lookupByRef}
+            onRefresh={store.refreshOrganizerData}
+            onPromote={organizerActions.onPromote}
+            onReject={organizerActions.onReject}
+            onLoadApplications={store.loadApplications}
+            onUploadImage={store.uploadEventImage}
+            onInvite={store.inviteToEvent}
+            onLoadInvitations={store.loadInvitations}
+            cities={cities}
+            onRequestCity={organizerActions.onRequestCity}
+            onLoadCityRequests={store.loadCityRequests}
+            onApproveCityRequest={organizerActions.onApproveCityRequest}
+            onDenyCityRequest={organizerActions.onDenyCityRequest}
+            onLoadVerifRequests={store.loadVerificationRequests}
+            onApproveVerif={organizerActions.onApproveVerif}
+            onDenyVerif={organizerActions.onDenyVerif}
+            onLoadPendingEvents={store.loadPendingEvents}
+            onApproveEvent={organizerActions.onApproveEvent}
+            onRejectEvent={organizerActions.onRejectEvent}
+            toast={toast}
+          />
+        )}
 
-      {/* ── Resale Market ── */}
-      <ResaleMarketModal
-        open={modal === 'market'}
-        listings={store.resaleListings}
-        currentUserId={store.user?.id}
-        loading={store.loading.resale}
-        onClose={close}
-        onBuy={async (listing, method, phone) => {
-          if (!store.user) { open('login'); return null }
-          return await checkout.handleBuyResale(listing, method, phone)
-        }}
-      />
+        {/* ── Resale Market ── */}
+        {openedModals.has('market') && (
+          <ResaleMarketModal
+            open={modal === 'market'}
+            listings={store.resaleListings}
+            currentUserId={store.user?.id}
+            loading={store.loading.resale}
+            onClose={close}
+            onBuy={async (listing, method, phone) => {
+              if (!store.user) { open('login'); return null }
+              return await checkout.handleBuyResale(listing, method, phone)
+            }}
+          />
+        )}
 
-      {/* ── Feed ── */}
-      <FeedModal
-        open={modal === 'feed'}
-        posts={store.feedPosts}
-        events={store.events}
-        loading={store.loading.feed}
-        currentUserId={store.user?.id}
-        onClose={close}
-        onCreate={store.createFeedPost}
-        onDelete={async (postId) => {
-          const ok = await store.deleteFeedPost(postId)
-          if (ok) toast('Moment supprimé', 'info')
-          else toast('Impossible de supprimer ce moment', 'error')
-        }}
-        toast={toast}
-      />
+        {/* ── Feed ── */}
+        {openedModals.has('feed') && (
+          <FeedModal
+            open={modal === 'feed'}
+            posts={store.feedPosts}
+            events={store.events}
+            loading={store.loading.feed}
+            currentUserId={store.user?.id}
+            onClose={close}
+            onCreate={store.createFeedPost}
+            onDelete={async (postId) => {
+              const ok = await store.deleteFeedPost(postId)
+              if (ok) toast('Moment supprimé', 'info')
+              else toast('Impossible de supprimer ce moment', 'error')
+            }}
+            toast={toast}
+          />
+        )}
+
+        {/* ── Onboarding / How it works ── */}
+        {openedModals.has('onboarding') && (
+          <OnboardingModal open={modal === 'onboarding'} onClose={closeOnboarding} />
+        )}
+
+        {/* ── FAQ ── */}
+        {openedModals.has('faq') && (
+          <FaqModal
+            open={modal === 'faq'}
+            onClose={close}
+            onContact={() => open('contact')}
+          />
+        )}
+
+        {/* ── Contact ── */}
+        {openedModals.has('contact') && (
+          <ContactModal
+            open={modal === 'contact'}
+            onClose={close}
+            user={store.user}
+            toast={toast}
+            onSubmit={store.submitContact}
+          />
+        )}
+
+        {/* ── Terms ── */}
+        {openedModals.has('terms') && (
+          <TermsModal open={modal === 'terms'} onClose={close} />
+        )}
+
+        {/* ── Privacy Policy ── */}
+        {openedModals.has('privacy') && (
+          <PrivacyModal
+            open={modal === 'privacy'}
+            onClose={close}
+            onDeleteAccount={store.user ? () => open('deleteAccount') : null}
+          />
+        )}
+
+        {/* ── Delete Account ── */}
+        {openedModals.has('deleteAccount') && (
+          <DeleteAccountModal
+            open={modal === 'deleteAccount'}
+            onClose={close}
+            onConfirm={store.deleteAccount}
+            toast={toast}
+          />
+        )}
+
+        {/* ── Event invitation RSVP ── */}
+        {openedModals.has('rsvp') && (
+          <RSVPModal
+            open={modal === 'rsvp'}
+            onClose={close}
+            invite={invitation.pendingInvite}
+            onRespond={invitation.respondToInvite}
+          />
+        )}
+      </Suspense>
 
       <Footer
         onHowItWorks={() => open('onboarding')}
@@ -387,51 +491,6 @@ function App() {
         onPrivacy={() => open('privacy')}
         onMarket={() => open('market')}
         onCreateEvent={handleCreateEvent}
-      />
-
-      {/* ── Onboarding / How it works ── */}
-      <OnboardingModal open={modal === 'onboarding'} onClose={closeOnboarding} />
-
-      {/* ── FAQ ── */}
-      <FaqModal
-        open={modal === 'faq'}
-        onClose={close}
-        onContact={() => open('contact')}
-      />
-
-      {/* ── Contact ── */}
-      <ContactModal
-        open={modal === 'contact'}
-        onClose={close}
-        user={store.user}
-        toast={toast}
-        onSubmit={store.submitContact}
-      />
-
-      {/* ── Terms ── */}
-      <TermsModal open={modal === 'terms'} onClose={close} />
-
-      {/* ── Privacy Policy ── */}
-      <PrivacyModal
-        open={modal === 'privacy'}
-        onClose={close}
-        onDeleteAccount={store.user ? () => open('deleteAccount') : null}
-      />
-
-      {/* ── Delete Account ── */}
-      <DeleteAccountModal
-        open={modal === 'deleteAccount'}
-        onClose={close}
-        onConfirm={store.deleteAccount}
-        toast={toast}
-      />
-
-      {/* ── Event invitation RSVP ── */}
-      <RSVPModal
-        open={modal === 'rsvp'}
-        onClose={close}
-        invite={invitation.pendingInvite}
-        onRespond={invitation.respondToInvite}
       />
 
       <Toast toasts={toasts} />
