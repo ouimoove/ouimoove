@@ -1,8 +1,12 @@
-import { useState, useEffect, useRef } from 'react'
-import { Capacitor } from '@capacitor/core'
-import { Browser } from '@capacitor/browser'
+import { useState, useEffect } from 'react'
 import { useStore } from './hooks/useStore.js'
 import { useToast } from './hooks/useToast.js'
+import { useCheckoutFlow } from './hooks/actions/useCheckoutFlow.js'
+import { useAuthActions } from './hooks/actions/useAuthActions.js'
+import { useOrganizerActions } from './hooks/actions/useOrganizerActions.js'
+import { useProfileActions } from './hooks/actions/useProfileActions.js'
+import { useTicketActions } from './hooks/actions/useTicketActions.js'
+import { useInvitationFlow } from './hooks/actions/useInvitationFlow.js'
 import { Navbar } from './components/Navbar.jsx'
 import { Hero } from './components/Hero.jsx'
 import { EventGrid } from './components/EventGrid.jsx'
@@ -33,40 +37,27 @@ function App() {
   const [filterCategory,  setFilterCategory]  = useState('')
   const [sortBy,          setSortBy]          = useState('date')
   const [cities,          setCities]          = useState([])
-  const [pendingInvite,   setPendingInvite]    = useState(null)
 
   const open  = (m) => setModal(m)
   const close = () => setModal(null)
 
-  // Dedupe so a purchase completed via both the return-flow and the
-  // realtime "just paid" event doesn't celebrate twice for the same order.
-  const celebratedOrders = useRef(new Set())
-  const celebrateOrder = (orderId, message = '🎉 Paiement confirmé ! Vos billets sont disponibles.') => {
-    if (!orderId || celebratedOrders.current.has(orderId)) return
-    celebratedOrders.current.add(orderId)
-    // In the native app the PayDunya checkout is an in-app browser sheet on
-    // top of the webview — dismiss it so the celebration is visible.
-    if (Capacitor.isNativePlatform()) Browser.close().catch(() => {})
-    toast(message, 'success')
-    open('tickets')
-  }
-
-  // On the web, checkout navigates the tab to PayDunya and the return URL
-  // brings the user back. Inside the Capacitor shell, navigating the webview
-  // away would leave the app entirely — so open checkout in the in-app
-  // browser instead and let the paydunya-webhook + justPaidOrder realtime
-  // listener complete and celebrate the order (no return redirect needed).
-  const openCheckout = async (url) => {
-    if (Capacitor.isNativePlatform()) await Browser.open({ url })
-    else window.location.href = url
-  }
+  // ── Action hooks — each owns the toast-then-branch wiring for one modal
+  // (or a small cluster of closely related modals) instead of it living
+  // inline here. App.jsx's own job is routing: which modal is open, and
+  // wiring URL/lifecycle events to the right handler below.
+  const checkout   = useCheckoutFlow(store, toast, { open, close })
+  const authActions = useAuthActions(store, toast, { close })
+  const organizerActions = useOrganizerActions(store, toast, { setCities })
+  const profileActions   = useProfileActions(store, toast, { close })
+  const ticketActions    = useTicketActions(store, toast)
+  const invitation = useInvitationFlow(store, toast, { open, close })
 
   // Fires "here are your tickets" the moment any of my orders gets marked
   // paid — including when it happens via the webhook, independent of
   // whether the browser ever made it back to the PayDunya return URL.
   useEffect(() => {
     if (!store.justPaidOrder) return
-    celebrateOrder(store.justPaidOrder.orderId)
+    checkout.celebrateOrder(store.justPaidOrder.orderId)
   }, [store.justPaidOrder]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Service worker + cities ────────────────────────────────
@@ -87,7 +78,7 @@ function App() {
         toast('Vérification du paiement…', 'info')
         const result = await store.verifyPaydunyaReturn()
         if (result?.ok) {
-          celebrateOrder(result.orderId)
+          checkout.celebrateOrder(result.orderId)
         } else {
           toast('Paiement annulé ou échoué.', 'error')
         }
@@ -104,7 +95,7 @@ function App() {
         open('login')
         return
       }
-      loadInviteAndOpenRsvp(token)
+      invitation.loadInviteAndOpenRsvp(token)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -114,36 +105,8 @@ function App() {
     const token = sessionStorage.getItem('pending_invite')
     if (!token) return
     sessionStorage.removeItem('pending_invite')
-    loadInviteAndOpenRsvp(token)
+    invitation.loadInviteAndOpenRsvp(token)
   }, [store.user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const loadInviteAndOpenRsvp = async (token) => {
-    const result = await store.getInvitationDetails(token)
-    if (result?.ok) {
-      setPendingInvite({ token, ...result })
-      open('rsvp')
-    } else if (result?.error === 'email_mismatch') {
-      toast(`Cette invitation est destinée à ${result.invited_email}. Connectez-vous avec ce compte.`, 'error')
-    } else {
-      toast(result?.error || 'Lien d\'invitation invalide.', 'error')
-    }
-  }
-
-  const respondToInvite = async (token, decision) => {
-    const result = await store.respondInvitation(token, decision)
-    if (result?.ok) {
-      toast(
-        decision === 'accepted'
-          ? '🎉 Présence confirmée ! Vous pouvez maintenant voir et réserver cet événement.'
-          : 'Réponse envoyée. Merci de nous avoir prévenus.',
-        'success'
-      )
-      close()
-      if (decision === 'accepted') await store.loadEvents()
-    } else {
-      toast(result?.error || 'Une erreur est survenue.', 'error')
-    }
-  }
 
   // ── Shared event link (?event=<id>) ────────────────────────
   // Auto-opens the event detail modal once events have loaded, so links
@@ -196,27 +159,6 @@ function App() {
     window.history.replaceState({}, '', url)
   }
 
-  const handleAddToCart = (event, selections) => {
-    const result = store.addToCart(event, selections)
-    if (!result) { toast('Sélectionnez au moins 1 billet', 'error'); return }
-    if (result.error) { toast(result.error, 'error'); return }
-    toast('Billets ajoutés au panier !', 'success')
-    close()
-  }
-
-  const handlePurchase = async (method, phone, discountAmount = 0) => {
-    const result = await store.purchase(method, phone, discountAmount)
-    if (!result) { toast('Paiement impossible. Réessayez.', 'error'); return }
-    if (result.error) { toast(result.error, 'error'); return }
-    if (result.pdError) { toast(`Erreur PayDunya : ${result.pdError}`, 'error'); return }
-    if (result.redirect) {
-      await openCheckout(result.redirect)
-      return
-    }
-    close()
-    celebrateOrder(result.orderId)
-  }
-
   const handleToggleFav = async (eventId) => {
     if (!requireAuth(() => {})) return
     const wasFav = store.favorites.includes(eventId)
@@ -242,18 +184,8 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  // ── Resale market ──────────────────────────────────────────
   // My listings (to show "en vente" badge on tickets)
   const myListings = store.resaleListings.filter(l => l.seller_id === store.user?.id)
-
-  const handleBuyResale = async (listing, method, phone) => {
-    const result = await store.buyResaleListing(listing, method, phone)
-    if (!result) { toast('Achat impossible. Réessayez.', 'error'); return result }
-    if (result.error) { toast(result.error, 'error'); return result }
-    if (result.redirect) { await openCheckout(result.redirect); return result }
-    celebrateOrder(result.orderId, '🎉 Billet acheté ! Disponible dans Mes Billets.')
-    return result
-  }
 
   const selectedEvent = store.events.find((e) => e.id === selectedEventId)
 
@@ -271,7 +203,7 @@ function App() {
         onFavorites={() => requireAuth(() => open('favorites'))}
         onProfile={() => requireAuth(() => open('profile'))}
         onOrganizer={() => requireAuth(() => open('organizer'))}
-        onLogout={async () => { await store.logout(); toast('À bientôt !', 'info') }}
+        onLogout={authActions.logoutFromNavbar}
         onLogoClick={handleLogoClick}
         onMarket={() => open('market')}
         onCreateEvent={handleCreateEvent}
@@ -303,29 +235,9 @@ function App() {
         mode={modal === 'login' ? 'login' : modal === 'signup' ? 'signup' : null}
         onClose={close}
         onSwitch={(m) => open(m)}
-        onLogin={async (email, pwd) => {
-          const r = await store.login(email, pwd)
-          if (!r.ok) return r.error
-          toast('Bienvenue, ' + r.user.name + ' !', 'success')
-          close()
-          return null
-        }}
-        onSignup={async (name, email, pwd, businessInfo) => {
-          const r = await store.signup(name, email, pwd, businessInfo)
-          if (!r.ok) return r.error
-          if (r.needsEmailConfirmation) {
-            toast('Vérifiez votre boîte email pour confirmer votre compte.', 'info')
-            close()
-            return null
-          }
-          toast('Compte créé ! Bienvenue ' + r.user.name, 'success')
-          close()
-          return null
-        }}
-        onGoogle={async () => {
-          try { await store.googleLogin() }
-          catch (e) { toast(e.message || 'Connexion Google impossible', 'error') }
-        }}
+        onLogin={authActions.onLogin}
+        onSignup={authActions.onSignup}
+        onGoogle={authActions.onGoogle}
       />
 
       {/* ── Event detail ── */}
@@ -333,7 +245,7 @@ function App() {
         open={modal === 'event'}
         event={selectedEvent}
         onClose={closeEvent}
-        onAddToCart={(selections) => requireAuth(() => handleAddToCart(selectedEvent, selections))}
+        onAddToCart={(selections) => requireAuth(() => checkout.handleAddToCart(selectedEvent, selections))}
         toast={toast}
       />
 
@@ -353,7 +265,7 @@ function App() {
         cart={store.cart}
         cartTotal={store.cartTotal}
         onClose={close}
-        onConfirm={handlePurchase}
+        onConfirm={checkout.handlePurchase}
       />
 
       {/* ── My Tickets ── */}
@@ -363,15 +275,8 @@ function App() {
         myListings={myListings}
         onClose={close}
         toast={toast}
-        onListForResale={async (params) => {
-          if (!store.user) return null
-          return await store.listTicketForResale(params)
-        }}
-        onCancelListing={async (listingId) => {
-          const ok = await store.cancelResaleListing(listingId)
-          if (ok) toast('Annonce retirée.', 'info')
-          else toast('Impossible de retirer l\'annonce.', 'error')
-        }}
+        onListForResale={ticketActions.onListForResale}
+        onCancelListing={ticketActions.onCancelListing}
       />
 
       {/* ── Favorites ── */}
@@ -392,31 +297,13 @@ function App() {
         isVerified={store.isVerified}
         isOrganizer={store.isOrganizer}
         onClose={close}
-        onSave={async (name, email, pwd) => {
-          const updated = await store.updateProfile(name, email, pwd)
-          if (!updated) { toast('Impossible de mettre à jour le profil', 'error'); return }
-          toast('Profil mis à jour', 'success')
-          close()
-        }}
-        onLogout={async () => { await store.logout(); toast('À bientôt !', 'info'); close() }}
+        onSave={profileActions.onSave}
+        onLogout={authActions.logoutFromProfile}
         onDeleteAccount={() => open('deleteAccount')}
         onApply={store.applyForOrganizer}
-        onSubscribePush={async () => {
-          const ok = await store.subscribePush()
-          if (ok) toast('Notifications activées 🔔', 'success')
-          else toast('Notifications non disponibles', 'error')
-          return ok
-        }}
-        onUnsubscribePush={async () => {
-          await store.unsubscribePush()
-          toast('Notifications désactivées', 'info')
-        }}
-        onSubmitVerification={async (file) => {
-          const result = await store.submitVerification(file)
-          if (result?.ok) toast('Document envoyé ! Vérification en cours.', 'success')
-          else toast(result?.error || 'Erreur lors de l\'envoi.', 'error')
-          return result
-        }}
+        onSubscribePush={profileActions.onSubscribePush}
+        onUnsubscribePush={profileActions.onUnsubscribePush}
+        onSubmitVerification={profileActions.onSubmitVerification}
         onLoadVerificationStatus={store.loadVerificationStatus}
       />
 
@@ -433,95 +320,32 @@ function App() {
         loading={store.loading}
         errors={store.errors}
         onClose={close}
-        onCreate={async (ev) => {
-          const created = await store.createEvent(ev)
-          if (!created) { toast("Impossible de créer l'événement", 'error'); return null }
-          toast('Événement envoyé pour validation ⏳', 'success')
-          return created
-        }}
-        onUpdate={async (eventId, data) => {
-          const ok = await store.updateEvent(eventId, data)
-          if (!ok) toast("Impossible de mettre à jour l'événement", 'error')
-          return ok
-        }}
-        onDelete={async (id) => {
-          const ok = await store.deleteEvent(id)
-          if (!ok) { toast("Impossible de supprimer l'événement", 'error'); return }
-          toast('Événement supprimé', 'info')
-        }}
-        onRefund={async (orderId) => {
-          const ok = await store.refundOrder(orderId)
-          if (!ok) { toast('Impossible de rembourser la commande', 'error'); return }
-          toast('Commande remboursée ↩', 'info')
-        }}
-        onCheckin={async (purchaseId, eventId) => {
-          const ok = await store.checkinPurchase(purchaseId, eventId)
-          if (!ok) { toast('Impossible de valider ce billet', 'error'); return }
-          toast('Check-in mis à jour ✓', 'success')
-        }}
+        onCreate={organizerActions.onCreate}
+        onUpdate={organizerActions.onUpdate}
+        onDelete={organizerActions.onDelete}
+        onRefund={organizerActions.onRefund}
+        onCheckin={organizerActions.onCheckin}
         onCheckinByRef={store.checkinByRef}
         onCheckinPartial={store.checkinPartial}
         onLookupByRef={store.lookupByRef}
         onRefresh={store.refreshOrganizerData}
-        onPromote={async (userId, appId) => {
-          const ok = await store.promoteToOrganizer(userId, appId)
-          if (!ok) { toast('Impossible de promouvoir cet utilisateur', 'error'); return }
-          toast('Utilisateur promu organisateur ✓', 'success')
-        }}
-        onReject={async (appId) => {
-          const ok = await store.rejectApplication(appId)
-          if (!ok) { toast('Impossible de refuser la demande', 'error'); return }
-          toast('Demande refusée', 'info')
-        }}
+        onPromote={organizerActions.onPromote}
+        onReject={organizerActions.onReject}
         onLoadApplications={store.loadApplications}
         onUploadImage={store.uploadEventImage}
         onInvite={store.inviteToEvent}
         onLoadInvitations={store.loadInvitations}
         cities={cities}
-        onRequestCity={async (name) => {
-          const result = await store.requestCity(name)
-          if (!result?.ok) toast(result?.error || 'Erreur lors de la demande', 'error')
-          return result
-        }}
+        onRequestCity={organizerActions.onRequestCity}
         onLoadCityRequests={store.loadCityRequests}
-        onApproveCityRequest={async (id, name) => {
-          const ok = await store.approveCityRequest(id, name)
-          if (ok) { toast(`Ville "${name}" ajoutée ✓`, 'success'); store.loadCities().then(l => { if (l?.length) setCities(l) }) }
-          else toast('Impossible d\'approuver', 'error')
-          return ok
-        }}
-        onDenyCityRequest={async (id) => {
-          const ok = await store.denyCityRequest(id)
-          if (ok) toast('Demande refusée.', 'info')
-          else toast('Impossible de refuser', 'error')
-          return ok
-        }}
+        onApproveCityRequest={organizerActions.onApproveCityRequest}
+        onDenyCityRequest={organizerActions.onDenyCityRequest}
         onLoadVerifRequests={store.loadVerificationRequests}
-        onApproveVerif={async (userId) => {
-          const ok = await store.approveVerification(userId)
-          if (ok) toast('Compte vérifié ✓', 'success')
-          else toast('Impossible d\'approuver', 'error')
-          return ok
-        }}
-        onDenyVerif={async (userId, reason) => {
-          const ok = await store.denyVerification(userId, reason)
-          if (ok) toast('Demande refusée.', 'info')
-          else toast('Impossible de refuser', 'error')
-          return ok
-        }}
+        onApproveVerif={organizerActions.onApproveVerif}
+        onDenyVerif={organizerActions.onDenyVerif}
         onLoadPendingEvents={store.loadPendingEvents}
-        onApproveEvent={async (id) => {
-          const ok = await store.approveEvent(id)
-          if (ok) toast('Événement approuvé et publié ✓', 'success')
-          else toast("Impossible d'approuver", 'error')
-          return ok
-        }}
-        onRejectEvent={async (id) => {
-          const ok = await store.deleteEvent(id)
-          if (ok) toast('Événement refusé et supprimé', 'info')
-          else toast('Impossible de refuser', 'error')
-          return ok
-        }}
+        onApproveEvent={organizerActions.onApproveEvent}
+        onRejectEvent={organizerActions.onRejectEvent}
         toast={toast}
       />
 
@@ -534,7 +358,7 @@ function App() {
         onClose={close}
         onBuy={async (listing, method, phone) => {
           if (!store.user) { open('login'); return null }
-          return await handleBuyResale(listing, method, phone)
+          return await checkout.handleBuyResale(listing, method, phone)
         }}
       />
 
@@ -606,8 +430,8 @@ function App() {
       <RSVPModal
         open={modal === 'rsvp'}
         onClose={close}
-        invite={pendingInvite}
-        onRespond={respondToInvite}
+        invite={invitation.pendingInvite}
+        onRespond={invitation.respondToInvite}
       />
 
       <Toast toasts={toasts} />
