@@ -62,7 +62,7 @@ export function useStore() {
     const result = await events.createEvent(ev)
     if (!result) return null
     const { created, freshEvents } = result
-    if (auth.userRole === 'organizer' || auth.userRole === 'admin') {
+    if (auth.userRole === 'organizer' || auth.userRole === 'admin' || auth.userRole === 'super_admin') {
       await orders.loadOrganizerStats(auth.user.id)
       await orders.loadOrganizerOrders(auth.user.id, freshEvents)
     }
@@ -73,7 +73,7 @@ export function useStore() {
     const result = await events.deleteEvent(id)
     if (!result) return false
     const { freshEvents } = result
-    if (auth.userRole === 'organizer' || auth.userRole === 'admin') {
+    if (auth.userRole === 'organizer' || auth.userRole === 'admin' || auth.userRole === 'super_admin') {
       await orders.loadOrganizerOrders(auth.user?.id, freshEvents)
       await orders.loadOrganizerStats(auth.user?.id)
     }
@@ -139,11 +139,11 @@ export function useStore() {
     if (!auth.user?.id || events.events.length === 0) return
     orders.loadMyOrders(auth.user.id, events.events, auth.user.name)
     orders.loadOrganizerOrders(auth.user.id, events.events)
-    if (auth.userRole === 'organizer' || auth.userRole === 'admin') {
+    if (auth.userRole === 'organizer' || auth.userRole === 'admin' || auth.userRole === 'super_admin') {
       orders.loadOrganizerStats(auth.user.id)
       events.loadMyEvents(auth.user.id)
     }
-    if (auth.userRole === 'admin') {
+    if (auth.userRole === 'admin' || auth.userRole === 'super_admin') {
       admin.loadApplications()
     }
   }, [auth.user?.id, auth.userRole, events.events.length]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -167,12 +167,13 @@ export function useStore() {
     admin.resetLocalState()
   }, [auth, orders, admin])
 
-  const isOrganizer = auth.userRole === 'organizer' || auth.userRole === 'admin'
-  const isAdmin     = auth.userRole === 'admin'
+  const isOrganizer  = auth.userRole === 'organizer' || auth.userRole === 'admin' || auth.userRole === 'super_admin'
+  const isAdmin      = auth.userRole === 'admin' || auth.userRole === 'super_admin'
+  const isSuperAdmin = auth.userRole === 'super_admin'
 
   return {
     user: auth.user, userRole: auth.userRole, userNumber: auth.userNumber, isVerified: auth.isVerified,
-    isOrganizer, isAdmin,
+    isOrganizer, isAdmin, isSuperAdmin,
     events: events.events, cart: cart.cart, favorites: auth.favorites,
     myPurchases:    orders.myOrders,
     organizerOrders: orders.organizerOrders,
@@ -210,6 +211,10 @@ export function useStore() {
     becomeOrganizer: auth.becomeOrganizer,
     promoteToOrganizer: admin.promoteToOrganizer,
     rejectApplication:  admin.rejectApplication,
+
+    loadAdmins: admin.loadAdmins,
+    promoteToAdmin: admin.promoteToAdmin,
+    demoteAdmin: admin.demoteAdmin,
 
     uploadEventImage: events.uploadEventImage,
     subscribePush:   push.subscribePush,

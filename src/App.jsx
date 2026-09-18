@@ -351,6 +351,7 @@ function App() {
             open={modal === 'organizer'}
             user={store.user}
             isAdmin={store.isAdmin}
+            isSuperAdmin={store.isSuperAdmin}
             myEvents={store.myEvents}
             purchases={store.purchases}
             organizerOrders={store.organizerOrders}
@@ -370,6 +371,9 @@ function App() {
             onRefresh={store.refreshOrganizerData}
             onPromote={organizerActions.onPromote}
             onReject={organizerActions.onReject}
+            onLoadAdmins={store.loadAdmins}
+            onPromoteAdmin={organizerActions.onPromoteAdmin}
+            onDemoteAdmin={organizerActions.onDemoteAdmin}
             onLoadApplications={store.loadApplications}
             onUploadImage={store.uploadEventImage}
             onInvite={store.inviteToEvent}

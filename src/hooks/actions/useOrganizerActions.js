@@ -95,11 +95,26 @@ export function useOrganizerActions(store, toast, { setCities }) {
     return ok
   }
 
+  const onPromoteAdmin = async (email) => {
+    const result = await store.promoteToAdmin(email)
+    if (result?.ok) toast('Nouvel admin ajouté ✓', 'success')
+    else toast(result?.error || "Impossible d'ajouter cet admin", 'error')
+    return result
+  }
+
+  const onDemoteAdmin = async (userId) => {
+    const result = await store.demoteAdmin(userId)
+    if (result?.ok) toast('Admin retiré', 'info')
+    else toast(result?.error || "Impossible de retirer cet admin", 'error')
+    return result
+  }
+
   return {
     onCreate, onUpdate, onDelete, onRefund, onCheckin,
     onPromote, onReject,
     onRequestCity, onApproveCityRequest, onDenyCityRequest,
     onApproveVerif, onDenyVerif,
     onApproveEvent, onRejectEvent,
+    onPromoteAdmin, onDemoteAdmin,
   }
 }

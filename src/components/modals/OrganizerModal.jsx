@@ -24,7 +24,7 @@ const ADMIN_TAB = { id: 'admin', label: '🔑 Admin' }
 // the routing between them, matching exactly what the single-file version
 // did inline.
 export function OrganizerModal({
-  open, user, isAdmin, myEvents, purchases, organizerOrders, organizerStats,
+  open, user, isAdmin, isSuperAdmin, myEvents, purchases, organizerOrders, organizerStats,
   applications,
   onClose, onCreate, onUpdate, onDelete, onCheckin, onCheckinByRef, onCheckinPartial, onLookupByRef, onRefund, onRefresh,
   onPromote, onReject, onLoadApplications, onUploadImage,
@@ -32,6 +32,7 @@ export function OrganizerModal({
   onLoadVerifRequests, onApproveVerif, onDenyVerif,
   onRequestCity, onLoadCityRequests, onApproveCityRequest, onDenyCityRequest,
   onLoadPendingEvents, onApproveEvent, onRejectEvent,
+  onLoadAdmins, onPromoteAdmin, onDemoteAdmin,
   cities,
   loading = {}, errors = {},
   toast,
@@ -156,6 +157,11 @@ export function OrganizerModal({
             onLoadPendingEvents={onLoadPendingEvents}
             onApproveEvent={onApproveEvent}
             onRejectEvent={onRejectEvent}
+            isSuperAdmin={isSuperAdmin}
+            currentUserId={user.id}
+            onLoadAdmins={onLoadAdmins}
+            onPromoteAdmin={onPromoteAdmin}
+            onDemoteAdmin={onDemoteAdmin}
           />
         )}
       </ModalBody>

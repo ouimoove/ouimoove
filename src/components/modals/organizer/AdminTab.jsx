@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { formatDate } from '../../../utils/helpers.js'
 
-export function AdminTab({ applications, onPromote, onReject, onRefresh, onLoadVerifRequests, onApproveVerif, onDenyVerif, onLoadCityRequests, onApproveCityRequest, onDenyCityRequest, onLoadPendingEvents, onApproveEvent, onRejectEvent }) {
+export function AdminTab({ applications, onPromote, onReject, onRefresh, onLoadVerifRequests, onApproveVerif, onDenyVerif, onLoadCityRequests, onApproveCityRequest, onDenyCityRequest, onLoadPendingEvents, onApproveEvent, onRejectEvent, isSuperAdmin, currentUserId, onLoadAdmins, onPromoteAdmin, onDemoteAdmin }) {
   const [busy, setBusy] = useState({})
   const [verifRequests, setVerifRequests] = useState([])
   const [denyTarget, setDenyTarget] = useState(null)
@@ -11,13 +11,37 @@ export function AdminTab({ applications, onPromote, onReject, onRefresh, onLoadV
   const [cityBusy, setCityBusy] = useState({})
   const [pendingEvents, setPendingEvents] = useState([])
   const [eventBusy, setEventBusy] = useState({})
+  const [admins, setAdmins] = useState([])
+  const [adminBusy, setAdminBusy] = useState({})
+  const [newAdminEmail, setNewAdminEmail] = useState('')
+  const [addAdminBusy, setAddAdminBusy] = useState(false)
 
   // Load verification + city + pending-event requests on mount
   useEffect(() => {
     onLoadVerifRequests?.().then(setVerifRequests)
     onLoadCityRequests?.().then(setCityRequests)
     onLoadPendingEvents?.().then(setPendingEvents)
+    if (isSuperAdmin) onLoadAdmins?.().then(setAdmins)
   }, [])
+
+  const refreshAdmins = () => onLoadAdmins?.().then(setAdmins)
+
+  const handleAddAdmin = async () => {
+    const email = newAdminEmail.trim()
+    if (!email) return
+    setAddAdminBusy(true)
+    const result = await onPromoteAdmin(email)
+    setAddAdminBusy(false)
+    if (result?.ok) { setNewAdminEmail(''); refreshAdmins() }
+  }
+
+  const handleRemoveAdmin = async (id) => {
+    if (!window.confirm('Retirer les droits admin de ce compte ?')) return
+    setAdminBusy(b => ({ ...b, [id]: true }))
+    const result = await onDemoteAdmin(id)
+    setAdminBusy(b => ({ ...b, [id]: false }))
+    if (result?.ok) refreshAdmins()
+  }
 
   const refreshVerif = () => onLoadVerifRequests?.().then(setVerifRequests)
   const refreshPendingEvents = () => onLoadPendingEvents?.().then(setPendingEvents)
@@ -60,6 +84,63 @@ export function AdminTab({ applications, onPromote, onReject, onRefresh, onLoadV
 
   return (
     <div>
+      {/* ── Manage admins (super_admin only) ── */}
+      {isSuperAdmin && (
+        <div style={{ marginBottom: 24, paddingBottom: 20, borderBottom: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <p style={{ color: 'var(--muted)', fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
+              👑 Administrateurs ({admins.length})
+            </p>
+            <button onClick={refreshAdmins} style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, padding: '5px 12px', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.78rem' }}>↻</button>
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+            <input
+              type="email"
+              value={newAdminEmail}
+              onChange={e => setNewAdminEmail(e.target.value)}
+              placeholder="Email d'un compte existant…"
+              style={{ flex: 1, background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', color: 'var(--text)', fontSize: '0.85rem', outline: 'none' }}
+            />
+            <button
+              disabled={addAdminBusy || !newAdminEmail.trim()}
+              onClick={handleAddAdmin}
+              style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid rgba(34,197,94,.4)', background: 'rgba(34,197,94,.12)', color: 'var(--success)', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600, opacity: (addAdminBusy || !newAdminEmail.trim()) ? 0.5 : 1, whiteSpace: 'nowrap' }}
+            >{addAdminBusy ? '…' : '+ Ajouter'}</button>
+          </div>
+          <p style={{ color: 'var(--muted)', fontSize: '0.72rem', marginTop: -6, marginBottom: 12 }}>
+            La personne doit déjà avoir son propre compte OuiMoove — chaque admin garde sa propre connexion.
+          </p>
+
+          {admins.length === 0 ? (
+            <p style={{ color: 'var(--muted)', fontSize: '0.82rem' }}>Aucun admin trouvé.</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {admins.map(a => (
+                <div key={a.id} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: '0.86rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {a.role === 'super_admin' ? '👑' : '🔑'} {a.full_name || a.email}
+                      {a.id === currentUserId && <span style={{ color: 'var(--muted)', fontWeight: 400, fontSize: '0.72rem' }}>(vous)</span>}
+                    </div>
+                    <div style={{ color: 'var(--muted)', fontSize: '0.75rem', marginTop: 2 }}>
+                      {a.email} · {a.role === 'super_admin' ? 'Super admin' : 'Admin'}
+                    </div>
+                  </div>
+                  {a.role === 'admin' && (
+                    <button
+                      disabled={adminBusy[a.id]}
+                      onClick={() => handleRemoveAdmin(a.id)}
+                      style={{ padding: '5px 10px', borderRadius: 8, border: '1px solid rgba(239,68,68,.4)', background: 'rgba(239,68,68,.1)', color: 'var(--danger)', cursor: 'pointer', fontSize: '0.75rem', opacity: adminBusy[a.id] ? 0.5 : 1, flexShrink: 0 }}
+                    >✗ Retirer</button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── Pending events (moderation queue) ── */}
       <div style={{ marginBottom: 24 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>

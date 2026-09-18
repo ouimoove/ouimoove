@@ -141,9 +141,37 @@ export function useOrganizerAdmin({ user }) {
     return true
   }, [])
 
+  // ── ADMIN MANAGEMENT (super_admin only) ────────────────────
+  // Every admin keeps their own separate login here — promoteToAdmin only
+  // elevates a profile that already exists (created via normal signup);
+  // it never creates credentials. RLS/RPCs enforce the super_admin check
+  // server-side too, this is just the client-side wiring.
+  const loadAdmins = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, full_name, email, role')
+      .in('role', ['admin', 'super_admin'])
+      .order('role', { ascending: false })
+    if (error) { console.error('loadAdmins:', error); return [] }
+    return data || []
+  }, [])
+
+  const promoteToAdmin = useCallback(async (email) => {
+    const { data, error } = await supabase.rpc('promote_to_admin', { target_email: email })
+    if (error) return { ok: false, error: error.message }
+    return data
+  }, [])
+
+  const demoteAdmin = useCallback(async (targetUserId) => {
+    const { data, error } = await supabase.rpc('demote_admin', { target_user_id: targetUserId })
+    if (error) return { ok: false, error: error.message }
+    return data
+  }, [])
+
   return {
     applications, loadApplications, promoteToOrganizer, rejectApplication, resetLocalState,
     submitVerification, loadVerificationStatus, loadVerificationRequests, approveVerification, denyVerification,
     loadCities, requestCity, loadCityRequests, approveCityRequest, denyCityRequest,
+    loadAdmins, promoteToAdmin, demoteAdmin,
   }
 }
