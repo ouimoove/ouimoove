@@ -11,9 +11,12 @@
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border);
   box-shadow: 0 1px 0 rgba(36,18,46,0.03);
-  /* env(safe-area-inset-top) is 0 everywhere except edge-to-edge
-     Android/notched devices, where it keeps the logo/nav buttons from
-     sitting under the status bar. */
+  /* env(safe-area-inset-top) is 0 on the Android app (MainActivity now
+     applies that inset as native WebView padding instead, since the
+     WebView doesn't reliably forward it to CSS) and on ordinary browsers;
+     it's only ever nonzero on notched devices in a browser tab, e.g.
+     Safari on iPhone, where it keeps the logo/nav buttons from sitting
+     under the notch. */
   padding: env(safe-area-inset-top) 2rem 0;
   display: flex;
   align-items: center;
