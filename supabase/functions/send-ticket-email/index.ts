@@ -47,7 +47,11 @@ serve(async (req) => {
           </table>
         </div>
         <p style="color:#6b6b8a;font-size:13px;margin-bottom:4px">📄 Référence : <code style="color:#a0a0b0">${orderId}</code></p>
-        <p style="color:#6b6b8a;font-size:13px;margin-bottom:24px">💳 Méthode : ${method}</p>
+        <p style="color:#6b6b8a;font-size:13px;margin-bottom:12px">💳 Méthode : ${method}</p>
+        <table role="presentation" style="border-collapse:collapse;margin-bottom:24px"><tr>
+          <td style="padding-right:8px"><img src="https://ouimoove.app/sevigo-logo.png" alt="SèviGo" height="18" style="display:block;height:18px;width:auto" /></td>
+          <td style="color:#4a4a6a;font-size:11px">Paiement traité en toute sécurité par SèviGo</td>
+        </tr></table>
         <p style="color:#a0a0b0;margin-bottom:20px">Retrouvez vos billets et QR codes dans <strong style="color:#fff">Mes Billets</strong> sur OuiMoove.</p>
         <a href="https://ouimoove.app" style="display:inline-block;background:linear-gradient(135deg,#ff6b35,#e85d04);color:#fff;padding:13px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px">Voir mes billets →</a>
         <p style="color:#3a3a5a;font-size:12px;margin-top:32px;border-top:1px solid #1a1a2e;padding-top:16px">OuiMoove — Vos billets, partout au Togo</p>
