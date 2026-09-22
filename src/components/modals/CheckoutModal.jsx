@@ -104,6 +104,10 @@ export function CheckoutModal({ open, cart, cartTotal, onClose, onConfirm }) {
     <Modal open={open} onClose={onClose}>
       <ModalHeader title="💳 Paiement" subtitle="Paiement sécurisé" />
       <ModalBody>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16 }}>
+          <img src="/sevigo-logo.png" alt="SèviGo" style={{ height: 14, width: 'auto' }} />
+          <span style={{ color: 'var(--muted)', fontSize: '0.72rem' }}>Paiement traité en toute sécurité par SèviGo</span>
+        </div>
         {/* Order summary */}
         <div className={styles.summary}>
           {cart.map(item => (

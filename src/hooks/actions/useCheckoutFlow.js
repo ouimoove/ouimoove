@@ -46,7 +46,7 @@ export function useCheckoutFlow(store, toast, { open, close }) {
     const result = await store.purchase(method, phone, discountAmount)
     if (!result) { toast('Paiement impossible. Réessayez.', 'error'); return }
     if (result.error) { toast(result.error, 'error'); return }
-    if (result.pdError) { toast(`Erreur PayDunya : ${result.pdError}`, 'error'); return }
+    if (result.pdError) { toast(`Erreur de paiement SèviGo : ${result.pdError}`, 'error'); return }
     if (result.redirect) {
       await openCheckout(result.redirect)
       return
