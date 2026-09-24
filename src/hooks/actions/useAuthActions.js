@@ -30,6 +30,23 @@ export function useAuthActions(store, toast, { close }) {
     catch (e) { toast(e.message || 'Connexion Google impossible', 'error') }
   }
 
+  // Always reports success for a well-formed request, whether or not the email
+  // has an account — so the form can't be used to discover who is registered.
+  const onForgot = async (email) => {
+    const r = await store.sendPasswordReset(email)
+    if (!r.ok && r.error === 'Email requis.') return r.error
+    if (!r.ok) console.warn('password reset request failed:', r.error)
+    return null
+  }
+
+  const onReset = async (newPassword) => {
+    const r = await store.updatePassword(newPassword)
+    if (!r.ok) return r.error
+    toast('Mot de passe mis à jour ✓', 'success')
+    close()
+    return null
+  }
+
   const logoutFromNavbar = async () => {
     await store.logout()
     toast('À bientôt !', 'info')
@@ -41,5 +58,5 @@ export function useAuthActions(store, toast, { close }) {
     close()
   }
 
-  return { onLogin, onSignup, onGoogle, logoutFromNavbar, logoutFromProfile }
+  return { onLogin, onSignup, onGoogle, onForgot, onReset, logoutFromNavbar, logoutFromProfile }
 }

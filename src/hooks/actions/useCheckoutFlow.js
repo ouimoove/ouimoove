@@ -42,8 +42,8 @@ export function useCheckoutFlow(store, toast, { open, close }) {
     close()
   }
 
-  const handlePurchase = async (method, phone, discountAmount = 0) => {
-    const result = await store.purchase(method, phone, discountAmount)
+  const handlePurchase = async (method, phone, discountAmount = 0, promoCode = '') => {
+    const result = await store.purchase(method, phone, discountAmount, promoCode)
     if (!result) { toast('Paiement impossible. Réessayez.', 'error'); return }
     if (result.error) { toast(result.error, 'error'); return }
     if (result.pdError) { toast(`Erreur de paiement SèviGo : ${result.pdError}`, 'error'); return }

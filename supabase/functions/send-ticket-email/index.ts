@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -18,8 +19,26 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
 
   try {
-    const { to, userName: userNameRaw, orderId, items, total, method } = await req.json()
+    const { to, userName: userNameRaw, orderId: orderIdRaw, items, total: totalRaw, method: methodRaw } = await req.json()
+
+    // This function sends mail from tickets@ouimoove.app, so it must not be a
+    // public mail relay. Allowed callers: our own server-side functions (service
+    // role key — payment completion), or a signed-in user emailing THEMSELVES.
+    const bearer = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '')
+    const isServer = !!bearer && bearer === Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    if (!isServer) {
+      const admin = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '', { auth: { persistSession: false } })
+      const { data } = bearer ? await admin.auth.getUser(bearer) : { data: { user: null } }
+      const callerEmail = data?.user?.email?.toLowerCase()
+      if (!callerEmail || callerEmail !== String(to ?? '').toLowerCase()) {
+        return new Response(JSON.stringify({ error: 'forbidden' }), { status: 403, headers: { ...CORS, 'Content-Type': 'application/json' } })
+      }
+    }
+
     const userName = escapeHtml(userNameRaw)
+    const orderId  = escapeHtml(orderIdRaw)
+    const method   = escapeHtml(methodRaw)
+    const total    = Number(totalRaw) || 0
     const RESEND_KEY = Deno.env.get('RESEND_API_KEY')
     if (!RESEND_KEY) {
       console.log('RESEND_API_KEY not configured — skipping email')

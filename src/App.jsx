@@ -80,6 +80,11 @@ function App() {
     checkout.celebrateOrder(store.justPaidOrder.orderId)
   }, [store.justPaidOrder]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Arrived from a password-reset email link: ask for the new password.
+  useEffect(() => {
+    if (store.recoveryMode) open('reset')
+  }, [store.recoveryMode]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Service worker + cities ────────────────────────────────
   useEffect(() => {
     if ('serviceWorker' in navigator) {
@@ -255,14 +260,16 @@ function App() {
 
       <Suspense fallback={null}>
         {/* ── Auth ── */}
-        {(openedModals.has('login') || openedModals.has('signup')) && (
+        {['login', 'signup', 'forgot', 'reset'].some((m) => openedModals.has(m)) && (
           <AuthModal
-            mode={modal === 'login' ? 'login' : modal === 'signup' ? 'signup' : null}
+            mode={['login', 'signup', 'forgot', 'reset'].includes(modal) ? modal : null}
             onClose={close}
             onSwitch={(m) => open(m)}
             onLogin={authActions.onLogin}
             onSignup={authActions.onSignup}
             onGoogle={authActions.onGoogle}
+            onForgot={authActions.onForgot}
+            onReset={authActions.onReset}
           />
         )}
 

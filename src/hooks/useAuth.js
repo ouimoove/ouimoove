@@ -10,6 +10,7 @@ export function useAuth() {
   const [userNumber, setUserNumber] = useState(null)
   const [isVerified, setIsVerified] = useState(false)
   const [favorites,  setFavoritesState] = useState([])
+  const [recoveryMode, setRecoveryMode] = useState(false)
 
   const loadUserRole = useCallback(async (userId) => {
     if (!userId) return 'user'
@@ -116,6 +117,25 @@ export function useAuth() {
     return { ok: true, user: profile }
   }, [loadFavorites])
 
+  // Password reset: request a link (sent via the send-auth-email hook), then —
+  // when the user lands back from that link — Supabase fires PASSWORD_RECOVERY
+  // with a temporary session, which flips `recoveryMode` so the UI can ask for
+  // the new password.
+  const sendPasswordReset = useCallback(async (email) => {
+    if (!email) return { ok: false, error: 'Email requis.' }
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: window.location.origin })
+    if (error) return { ok: false, error: error.message }
+    return { ok: true }
+  }, [])
+
+  const updatePassword = useCallback(async (newPassword) => {
+    if (!newPassword || newPassword.length < 6) return { ok: false, error: 'Mot de passe trop court (6 car. min).' }
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    if (error) return { ok: false, error: error.message }
+    setRecoveryMode(false)
+    return { ok: true }
+  }, [])
+
   const googleLogin = useCallback(async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -172,8 +192,9 @@ export function useAuth() {
   }, [user])
 
   return {
-    user, userRole, userNumber, isVerified, favorites,
-    setUserState, setUserRole, setIsVerified, // exposed for the auth-state effect in useStore.js
+    user, userRole, userNumber, isVerified, favorites, recoveryMode,
+    sendPasswordReset, updatePassword,
+    setUserState, setUserRole, setIsVerified, setRecoveryMode, // exposed for the auth-state effect in useStore.js
     loadUserRole, loadFavorites, toggleFavorite, resetLocalState,
     login, signup, googleLogin, logout, updateProfile, deleteAccount,
     applyForOrganizer, becomeOrganizer,

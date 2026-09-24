@@ -52,9 +52,100 @@ function LoginForm({ onLogin, onGoogle, onSwitch }) {
       </button>
 
       <p className={styles.switchTxt}>
+        <span className={styles.link} onClick={() => onSwitch('forgot')}>Mot de passe oublié ?</span>
+      </p>
+      <p className={styles.switchTxt}>
         Pas encore de compte ?{' '}
         <span className={styles.link} onClick={() => onSwitch('signup')}>S'inscrire</span>
       </p>
+    </>
+  )
+}
+
+function ForgotForm({ onForgot, onSwitch }) {
+  const [email, setEmail] = useState('')
+  const [error, setError] = useState('')
+  const [sent, setSent] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  const submit = async () => {
+    if (!email.trim()) { setError('Entrez votre email.'); return }
+    setError('')
+    setLoading(true)
+    const err = await onForgot(email)
+    setLoading(false)
+    if (err) setError(err)
+    else setSent(true)
+  }
+
+  if (sent) {
+    return (
+      <>
+        <p style={{ color: 'var(--text)', fontSize: '0.9rem', lineHeight: 1.6, marginBottom: 18 }}>
+          Si un compte existe pour <strong>{email}</strong>, un email avec un lien pour
+          choisir un nouveau mot de passe vient d’être envoyé. Pensez à vérifier vos spams.
+        </p>
+        <button className={styles.submitBtn} onClick={() => onSwitch('login')}>Retour à la connexion</button>
+      </>
+    )
+  }
+
+  return (
+    <>
+      <div className={styles.group}>
+        <label className={styles.label}>Email</label>
+        <input className={styles.input} type="email" placeholder="vous@email.com"
+          value={email} onChange={e => setEmail(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && submit()} />
+      </div>
+
+      {error && <p className={styles.error}>{error}</p>}
+
+      <button className={styles.submitBtn} onClick={submit} disabled={loading}>
+        {loading ? 'Envoi…' : 'Envoyer le lien'}
+      </button>
+
+      <p className={styles.switchTxt}>
+        <span className={styles.link} onClick={() => onSwitch('login')}>← Retour à la connexion</span>
+      </p>
+    </>
+  )
+}
+
+function ResetForm({ onReset }) {
+  const [pwd, setPwd] = useState('')
+  const [pwd2, setPwd2] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const submit = async () => {
+    if (pwd !== pwd2) { setError('Les mots de passe ne correspondent pas.'); return }
+    setError('')
+    setLoading(true)
+    const err = await onReset(pwd)
+    setLoading(false)
+    if (err) setError(err)
+  }
+
+  return (
+    <>
+      <div className={styles.group}>
+        <label className={styles.label}>Nouveau mot de passe</label>
+        <input className={styles.input} type="password" placeholder="min. 6 caractères"
+          value={pwd} onChange={e => setPwd(e.target.value)} />
+      </div>
+      <div className={styles.group}>
+        <label className={styles.label}>Confirmer le mot de passe</label>
+        <input className={styles.input} type="password" placeholder="••••••••"
+          value={pwd2} onChange={e => setPwd2(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && submit()} />
+      </div>
+
+      {error && <p className={styles.error}>{error}</p>}
+
+      <button className={styles.submitBtn} onClick={submit} disabled={loading}>
+        {loading ? 'Mise à jour…' : 'Enregistrer le mot de passe'}
+      </button>
     </>
   )
 }
@@ -180,19 +271,24 @@ function SignupForm({ onSignup, onGoogle, onSwitch }) {
   )
 }
 
-export function AuthModal({ mode, onClose, onSwitch, onLogin, onSignup, onGoogle }) {
-  const isLogin = mode === 'login'
-  const isSignup = mode === 'signup'
+const HEADERS = {
+  login:  { title: 'Connexion',              subtitle: 'Content de vous revoir !' },
+  signup: { title: 'Créer un compte',        subtitle: 'Rejoignez la communauté OuiMoove' },
+  forgot: { title: 'Mot de passe oublié',    subtitle: 'Nous vous envoyons un lien de réinitialisation' },
+  reset:  { title: 'Nouveau mot de passe',   subtitle: 'Choisissez un nouveau mot de passe' },
+}
+
+export function AuthModal({ mode, onClose, onSwitch, onLogin, onSignup, onGoogle, onForgot, onReset }) {
+  const header = HEADERS[mode]
 
   return (
-    <Modal open={isLogin || isSignup} onClose={onClose}>
-      <ModalHeader
-        title={isLogin ? 'Connexion' : 'Créer un compte'}
-        subtitle={isLogin ? 'Content de vous revoir !' : 'Rejoignez la communauté OuiMoove'}
-      />
+    <Modal open={!!header} onClose={onClose}>
+      <ModalHeader title={header?.title} subtitle={header?.subtitle} />
       <ModalBody>
-        {isLogin && <LoginForm onLogin={onLogin} onGoogle={onGoogle} onSwitch={onSwitch} />}
-        {isSignup && <SignupForm onSignup={onSignup} onGoogle={onGoogle} onSwitch={onSwitch} />}
+        {mode === 'login'  && <LoginForm onLogin={onLogin} onGoogle={onGoogle} onSwitch={onSwitch} />}
+        {mode === 'signup' && <SignupForm onSignup={onSignup} onGoogle={onGoogle} onSwitch={onSwitch} />}
+        {mode === 'forgot' && <ForgotForm onForgot={onForgot} onSwitch={onSwitch} />}
+        {mode === 'reset'  && <ResetForm onReset={onReset} />}
       </ModalBody>
     </Modal>
   )

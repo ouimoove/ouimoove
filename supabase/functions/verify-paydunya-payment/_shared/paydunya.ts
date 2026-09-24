@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4'
+import { priceCart, priceListing } from './pricing.ts'
 
-const SITE_URL = Deno.env.get('SITE_URL') ?? 'https://ouimoove.vercel.app'
+const SITE_URL = Deno.env.get('SITE_URL') ?? 'https://ouimoove.app'
 
 const PAYDUNYA_BASE = Deno.env.get('PAYDUNYA_MODE') === 'live'
   ? 'https://app.paydunya.com/api/v1'
@@ -71,6 +72,38 @@ export async function confirmAndComplete(token: string): Promise<CompleteResult>
     return { status: 'failed', handled: true }
   }
 
+  // PayDunya says it was paid — but paid *how much*? Recompute what this
+  // order should have cost from the database (never from the browser-visible
+  // cart/prices) and refuse to issue tickets unless PayDunya confirms exactly
+  // that amount. Fails closed: an unreadable amount is treated as a mismatch.
+  const rawPayload = pending.payload as Record<string, any>
+  const priced = pending.type === 'resale'
+    ? await priceListing(admin, rawPayload.listingId, pending.user_id, 'reserved')
+    : await priceCart(admin, rawPayload.cart, rawPayload.promoCode, { forCompletion: true })
+  const paid = Number(pdData?.invoice?.total_amount ?? pdData?.total_amount)
+  const expectedTotal = priced.ok ? priced.total : NaN
+
+  if (!priced.ok || !Number.isFinite(paid) || paid !== expectedTotal) {
+    const { data: claimed } = await admin
+      .from('pending_payments')
+      .update({ status: 'failed' })
+      .eq('token', token)
+      .eq('status', 'pending')
+      .select('token')
+    if (claimed && claimed.length > 0) {
+      // The order row is deliberately KEPT (still 'pending', no tickets) so
+      // that a real payment that didn't match can be found and refunded by hand.
+      console.error('PAYMENT AMOUNT MISMATCH — no tickets issued', {
+        token, order_id: pending.order_id, type: pending.type, paid, expected: expectedTotal,
+        pricingError: priced.ok ? null : priced.error,
+      })
+      if (pending.type === 'resale') {
+        await admin.from('ticket_listings').update({ status: 'active', buyer_id: null }).eq('id', rawPayload.listingId)
+      }
+    }
+    return { status: 'failed', handled: true }
+  }
+
   // Atomically claim the order — only the winner of this race performs the writes below.
   const { data: claimedOrder } = await admin
     .from('orders')
@@ -84,23 +117,27 @@ export async function confirmAndComplete(token: string): Promise<CompleteResult>
     return { status: 'completed', handled: false, alreadyCompleted: true }
   }
 
-  const payload = pending.payload as Record<string, any>
+  // From here on, everything issued comes from the database-priced result —
+  // event/ticket ids, quantities and prices are never taken from the payload.
+  const payload = { ...rawPayload, total: expectedTotal } as Record<string, any>
 
-  if (pending.type === 'resale') {
+  if (pending.type === 'resale' && priced.ok && 'listing' in priced) {
+    const l = priced.listing
     await admin.from('order_items').insert({
       order_id:       pending.order_id,
-      event_id:       payload.eventId,
-      ticket_type_id: payload.ticketTypeId,
-      quantity:       payload.quantity,
-      unit_price_cfa: payload.askPrice,
+      event_id:       l.eventId,
+      ticket_type_id: l.ticketTypeId,
+      quantity:       l.quantity,
+      unit_price_cfa: l.askPrice,
       is_resale:      true,
     })
-    await admin.from('order_items').update({ resold: true }).eq('id', payload.originalOrderItemId)
+    await admin.from('order_items').update({ resold: true }).eq('id', l.orderItemId)
     await admin.from('ticket_listings').update({
       status: 'sold', buyer_id: pending.user_id, buyer_order_id: pending.order_id, sold_at: new Date().toISOString(),
-    }).eq('id', payload.listingId)
-  } else {
-    const cart = (payload.cart ?? []) as Array<{ eventId: string; ticketTypeId: string; qty: number; price: number }>
+    }).eq('id', l.id)
+  } else if (priced.ok && 'lines' in priced) {
+    payload.cart = priced.lines
+    const cart = priced.lines
     for (const item of cart) {
       await admin.from('order_items').insert({
         order_id:       pending.order_id,

@@ -119,6 +119,8 @@ export function useStore() {
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_evt, session) => {
+      // Landing from a password-reset email link: ask for the new password.
+      if (_evt === 'PASSWORD_RECOVERY') auth.setRecoveryMode(true)
       const u = session?.user
       if (u) {
         const profile = { id: u.id, name: u.user_metadata?.full_name || u.email, email: u.email }
@@ -174,6 +176,9 @@ export function useStore() {
   return {
     user: auth.user, userRole: auth.userRole, userNumber: auth.userNumber, isVerified: auth.isVerified,
     isOrganizer, isAdmin, isSuperAdmin,
+    recoveryMode: auth.recoveryMode,
+    sendPasswordReset: auth.sendPasswordReset,
+    updatePassword: auth.updatePassword,
     events: events.events, cart: cart.cart, favorites: auth.favorites,
     myPurchases:    orders.myOrders,
     organizerOrders: orders.organizerOrders,

@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase.js'
+import { edgeErrorMessage } from '../utils/helpers.js'
 
 // Set VITE_PAYMENT_MODE=paydunya in .env (and Vercel env vars) to use real PayDunya payments.
 // Default is 'simulation' (direct DB insert as paid — no redirect).
@@ -50,7 +51,10 @@ export function useCart({ user, events, loadEvents, loadMyOrders, loadResaleList
   const clearCart = useCallback(() => setCart([]), [setCart])
 
   // ── PURCHASE (simulation or PayDunya) ──────────────────────
-  const purchase = useCallback(async (method, phone = '', discountAmount = 0) => {
+  // `discountAmount` only feeds the local (simulation / free-order) path and the
+  // on-screen total. In PayDunya mode the server ignores it: it receives just
+  // the promo *code* and recomputes every price and the discount itself.
+  const purchase = useCallback(async (method, phone = '', discountAmount = 0, promoCode = '') => {
     if (!user || !cart.length) return null
 
     const today = new Date().toISOString().slice(0, 10)
@@ -68,48 +72,28 @@ export function useCart({ user, events, loadEvents, loadMyOrders, loadResaleList
       const returnUrl = `${window.location.origin}/?paydunya_return=1`
       const cancelUrl = `${window.location.origin}/?paydunya_cancel=1`
 
+      // Only ids + quantities + promo code go up. The server prices the cart
+      // from the database, applies the discount, creates the order and the
+      // pending payment itself, and identifies the buyer from the session
+      // token — nothing the browser says about money is trusted.
       const { data: pdData, error: pdError } = await supabase.functions.invoke('create-paydunya-payment', {
-        body: { cart, total, userId: user.id, returnUrl, cancelUrl, method, phone },
+        body: {
+          type: 'purchase',
+          cart: cart.map((i) => ({ ticketTypeId: i.ticketTypeId, qty: i.qty })),
+          promoCode: promoCode || undefined,
+          returnUrl, cancelUrl, method, phone,
+        },
       })
 
       if (pdError || pdData?.response_code !== '00') {
         console.error('PayDunya create error:', pdError || pdData)
-        return { pdError: pdData?.description || pdData?.response_text || pdError?.message || 'Erreur PayDunya' }
+        return { pdError: (await edgeErrorMessage(pdError, pdData)) || pdData?.description || pdData?.response_text || 'Erreur de paiement' }
       }
 
-      // Pre-create pending order
-      const orderId = crypto.randomUUID()
-      const { error: orderError } = await supabase.from('orders').insert({
-        id:             orderId,
-        user_id:        user.id,
-        buyer_name:     user.name,
-        buyer_email:    user.email,
-        total_cfa:      total,
-        payment_method: method,
-        payment_status: 'pending',
-        paydunya_token: pdData.token,
-      })
-      if (orderError) { console.error('purchase pending order:', orderError); return null }
-
-      // Persist what's needed to complete the order server-side — either when
-      // the browser returns, or via the PayDunya webhook if it never does.
-      const cartSnapshot = cart.map((i) => ({
-        eventId: i.eventId, ticketTypeId: i.ticketTypeId, qty: i.qty, price: i.price,
-        eventTitle: i.eventTitle, ticketName: i.ticketName,
-      }))
-      const { error: pendingError } = await supabase.from('pending_payments').insert({
-        token:   pdData.token,
-        order_id: orderId,
-        type:    'purchase',
-        user_id: user.id,
-        payload: { cart: cartSnapshot, total },
-      })
-      if (pendingError) { console.error('purchase pending_payments:', pendingError); return null }
-
       // Kept for the "cancelled at checkout" UI path only — completion itself
-      // now happens server-side (verify-paydunya-payment / paydunya-webhook).
+      // happens server-side (verify-paydunya-payment / paydunya-webhook).
       sessionStorage.setItem('om_pending', JSON.stringify({
-        type: 'purchase', orderId, token: pdData.token, userId: user.id,
+        type: 'purchase', orderId: pdData.order_id, token: pdData.token, userId: user.id,
       }))
 
       clearCart()

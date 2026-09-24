@@ -12,3 +12,15 @@ export function fmtPrice(n) {
   if (n === 0) return 'Gratuit'
   return n.toLocaleString('fr-FR') + ' FCFA'
 }
+
+// supabase.functions.invoke() reports any non-2xx response as a generic
+// "Edge Function returned a non-2xx status code"; the useful message our
+// functions send ({ error: '...' }) is in the response body on error.context.
+export async function edgeErrorMessage(error, data) {
+  if (data?.error) return data.error
+  try {
+    const body = await error?.context?.json?.()
+    if (body?.error) return body.error
+  } catch { /* body wasn't JSON */ }
+  return error?.message || null
+}

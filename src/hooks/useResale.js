@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase.js'
+import { edgeErrorMessage } from '../utils/helpers.js'
 
 const PAYMENT_MODE = import.meta.env.VITE_PAYMENT_MODE || 'simulation'
 
@@ -96,56 +97,23 @@ export function useResale({ user, events, loadEvents, loadMyOrders, setLoad, set
       const returnUrl = `${window.location.origin}/?paydunya_return=1`
       const cancelUrl = `${window.location.origin}/?paydunya_cancel=1`
 
-      const fakeCart = [{
-        eventTitle: listing.event_title,
-        ticketName: `${listing.ticket_name} (revente)`,
-        qty:        listing.quantity,
-        price:      listing.ask_price_cfa + fee,
-      }]
-
+      // Only the listing id goes up. The server reads the price from the
+      // listing, adds the fee, reserves the listing for this buyer and creates
+      // the order + pending payment itself.
       const { data: pdData, error: pdError } = await supabase.functions.invoke('create-paydunya-payment', {
-        body: { cart: fakeCart, total, userId: user.id, returnUrl, cancelUrl, method, phone },
+        body: { type: 'resale', listingId: listing.id, returnUrl, cancelUrl, method, phone },
       })
 
       if (pdError || pdData?.response_code !== '00') {
         console.error('PayDunya resale error:', pdError || pdData)
-        return null
+        const message = await edgeErrorMessage(pdError, pdData)
+        return message ? { error: message } : null
       }
 
-      // Reserve listing
-      await supabase.from('ticket_listings').update({ status: 'reserved', buyer_id: user.id }).eq('id', listing.id)
-
-      // Pre-create pending order
-      await supabase.from('orders').insert({
-        id:             buyerOrderId,
-        user_id:        user.id,
-        buyer_name:     user.name,
-        buyer_email:    user.email,
-        total_cfa:      total,
-        payment_method: method,
-        payment_status: 'pending',
-        paydunya_token: pdData.token,
-      })
-
-      await supabase.from('pending_payments').insert({
-        token:    pdData.token,
-        order_id: buyerOrderId,
-        type:     'resale',
-        user_id:  user.id,
-        payload: {
-          listingId:           listing.id,
-          eventId:             listing.event_id,
-          ticketTypeId:        listing.ticket_type_id,
-          quantity:            listing.quantity,
-          askPrice:            listing.ask_price_cfa,
-          originalOrderItemId: listing.order_item_id,
-        },
-      })
-
       // Kept for the "cancelled at checkout" UI path only — completion itself
-      // now happens server-side (verify-paydunya-payment / paydunya-webhook).
+      // happens server-side (verify-paydunya-payment / paydunya-webhook).
       sessionStorage.setItem('om_pending', JSON.stringify({
-        type: 'resale', orderId: buyerOrderId, token: pdData.token, listingId: listing.id, userId: user.id,
+        type: 'resale', orderId: pdData.order_id, token: pdData.token, listingId: listing.id, userId: user.id,
       }))
 
       return { redirect: pdData.checkout_url }

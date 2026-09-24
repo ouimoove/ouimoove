@@ -42,15 +42,8 @@ const PROMO_CODES = {
   'TOGO2025':   { pct: 15, label: '15% de réduction' },
 }
 
-function formatCardNumber(val) {
-  return val.replace(/\D/g, '').slice(0, 16).replace(/(.{4})/g, '$1 ').trim()
-}
-
 export function CheckoutModal({ open, cart, cartTotal, onClose, onConfirm }) {
   const [method,  setMethod]  = useState('card')
-  const [card,    setCard]    = useState('')
-  const [exp,     setExp]     = useState('')
-  const [cvv,     setCvv]     = useState('')
   const [phone,   setPhone]   = useState('')
   const [error,   setError]   = useState('')
   const [loading, setLoading] = useState(false)
@@ -74,11 +67,7 @@ export function CheckoutModal({ open, cart, cartTotal, onClose, onConfirm }) {
   const removePromo = () => { setPromoApplied(null); setPromoInput(''); setPromoError('') }
 
   const validate = () => {
-    if (method === 'card') {
-      if (card.replace(/\s/g, '').length < 16) return 'Numéro de carte invalide.'
-      if (exp.length < 5) return "Date d'expiration invalide."
-      if (cvv.length < 3) return 'CVV invalide.'
-    } else {
+    if (method !== 'card') {
       const digits = phone.replace(/[\s+]/g, '')
       if (digits.length < 8) return 'Numéro de téléphone invalide.'
     }
@@ -96,7 +85,9 @@ export function CheckoutModal({ open, cart, cartTotal, onClose, onConfirm }) {
     if (err) { setError(err); return }
     setError('')
     setLoading(true)
-    await onConfirm(method, phone, discountAmount)
+    // The code (not just the computed amount) goes along so the server can
+    // apply and validate the discount itself.
+    await onConfirm(method, phone, discountAmount, promoApplied ? promoInput.trim().toUpperCase() : '')
     setLoading(false)
   }
 
@@ -184,27 +175,12 @@ export function CheckoutModal({ open, cart, cartTotal, onClose, onConfirm }) {
               ))}
             </div>
 
-            {/* Card fields */}
+            {/* Card — entered on the payment provider's own secure page, never in this form */}
             {method === 'card' && (
-              <div className={styles.fields}>
-                <div className={styles.group}>
-                  <label className={styles.label}>Numéro de carte</label>
-                  <input className={styles.input} placeholder="4242 4242 4242 4242"
-                    value={card} onChange={e => setCard(formatCardNumber(e.target.value))} />
-                </div>
-                <div className={styles.row}>
-                  <div className={styles.group}>
-                    <label className={styles.label}>Expiration</label>
-                    <input className={styles.input} placeholder="MM/AA" maxLength={5}
-                      value={exp} onChange={e => setExp(e.target.value)} />
-                  </div>
-                  <div className={styles.group}>
-                    <label className={styles.label}>CVV</label>
-                    <input className={styles.input} placeholder="123" maxLength={3}
-                      value={cvv} onChange={e => setCvv(e.target.value)} />
-                  </div>
-                </div>
-              </div>
+              <p style={{ color: 'var(--muted)', fontSize: '0.82rem', lineHeight: 1.5, marginBottom: 14 }}>
+                🔒 Vous serez redirigé vers la page de paiement sécurisée pour saisir les informations de votre carte.
+                Elles ne transitent jamais par OuiMoove.
+              </p>
             )}
 
             {/* Mobile money fields */}
