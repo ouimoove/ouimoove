@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Modal, ModalHeader, ModalBody } from '../Modal.jsx'
 import { TermsBody } from './InfoModals.jsx'
+import { clickable } from '../../utils/helpers.js'
 import styles from './AuthModal.module.css'
 
 const GoogleIcon = () => (
@@ -52,11 +53,11 @@ function LoginForm({ onLogin, onGoogle, onSwitch }) {
       </button>
 
       <p className={styles.switchTxt}>
-        <span className={styles.link} onClick={() => onSwitch('forgot')}>Mot de passe oublié ?</span>
+        <span className={styles.link} {...clickable(() => onSwitch('forgot'))}>Mot de passe oublié ?</span>
       </p>
       <p className={styles.switchTxt}>
         Pas encore de compte ?{' '}
-        <span className={styles.link} onClick={() => onSwitch('signup')}>S'inscrire</span>
+        <span className={styles.link} {...clickable(() => onSwitch('signup'))}>S'inscrire</span>
       </p>
     </>
   )
@@ -106,7 +107,7 @@ function ForgotForm({ onForgot, onSwitch }) {
       </button>
 
       <p className={styles.switchTxt}>
-        <span className={styles.link} onClick={() => onSwitch('login')}>← Retour à la connexion</span>
+        <span className={styles.link} {...clickable(() => onSwitch('login'))}>← Retour à la connexion</span>
       </p>
     </>
   )
@@ -250,7 +251,7 @@ function SignupForm({ onSignup, onGoogle, onSwitch }) {
         <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} />
         <span>
           J’accepte les{' '}
-          <span className={styles.link} onClick={(e) => { e.preventDefault(); setShowTerms(true) }}>
+          <span className={styles.link} {...clickable((e) => { e.preventDefault(); setShowTerms(true) })}>
             conditions d’utilisation
           </span>{' '}
           et la politique de confidentialité de OuiMoove.
@@ -265,7 +266,7 @@ function SignupForm({ onSignup, onGoogle, onSwitch }) {
 
       <p className={styles.switchTxt}>
         Déjà un compte ?{' '}
-        <span className={styles.link} onClick={() => onSwitch('login')}>Se connecter</span>
+        <span className={styles.link} {...clickable(() => onSwitch('login'))}>Se connecter</span>
       </p>
     </>
   )

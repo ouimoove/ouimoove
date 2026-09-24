@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Modal, ModalHeader, ModalBody } from '../Modal.jsx'
+import { clickable } from '../../utils/helpers.js'
 
 /* ════════════════════════════════════════════════════════════
    Shared bits
@@ -82,7 +83,7 @@ export function OnboardingModal({ open, onClose }) {
           {/* progress dots */}
           <div style={{ display: 'flex', gap: 7, justifyContent: 'center', marginBottom: 24 }}>
             {STEPS.map((_, i) => (
-              <span key={i} onClick={() => setStep(i)} style={{
+              <span key={i} {...clickable(() => setStep(i))} aria-label={`Étape ${i + 1}`} style={{
                 width: i === step ? 22 : 8, height: 8, borderRadius: 99,
                 background: i === step ? 'var(--purple)' : 'var(--border)',
                 cursor: 'pointer', transition: 'all .25s',

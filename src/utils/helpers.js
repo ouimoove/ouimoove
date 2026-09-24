@@ -24,3 +24,18 @@ export async function edgeErrorMessage(error, data) {
   } catch { /* body wasn't JSON */ }
   return error?.message || null
 }
+
+// Props that make a non-button element (span/div) behave like a button for
+// keyboard and screen-reader users: focusable, announced as a button, and
+// activated by Enter or Space as well as click. Prefer a real <button> where
+// styling allows; this is for places where an existing span/div carries the styling.
+export function clickable(handler) {
+  return {
+    role: 'button',
+    tabIndex: 0,
+    onClick: handler,
+    onKeyDown: (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handler(e) }
+    },
+  }
+}

@@ -1,4 +1,5 @@
 import { CATEGORIES, CITIES, CATEGORY_EMOJI } from '../data/events.js'
+import { clickable } from '../utils/helpers.js'
 import styles from './Hero.module.css'
 
 export function Hero({
@@ -53,7 +54,7 @@ export function Hero({
         ))}
       </div>
 
-      <div className={styles.createCta} onClick={onCreateEvent}>
+      <div className={styles.createCta} {...clickable(onCreateEvent)}>
         <span>🎤 Vous organisez un événement ?</span>
         <span className={styles.ctaLink}>Publiez-le gratuitement →</span>
       </div>

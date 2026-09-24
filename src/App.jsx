@@ -250,6 +250,7 @@ function App() {
         favorites={store.favorites}
         loading={store.loading.events}
         error={store.errors.events}
+        onRetry={() => store.loadEvents()}
         search={search}
         filterCity={filterCity}
         filterCategory={filterCategory}

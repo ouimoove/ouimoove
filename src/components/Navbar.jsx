@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { clickable } from '../utils/helpers.js'
 import styles from './Navbar.module.css'
 
 export function Navbar({
@@ -14,7 +15,7 @@ export function Navbar({
   return (
     <>
       <nav className={styles.nav}>
-        <div className={styles.logo} onClick={onLogoClick} style={{ cursor: onLogoClick ? 'pointer' : 'default' }}>
+        <div className={styles.logo} {...(onLogoClick ? clickable(onLogoClick) : {})} aria-label={onLogoClick ? 'OuiMoove — retour en haut' : undefined} style={{ cursor: onLogoClick ? 'pointer' : 'default' }}>
           {!logoErr ? (
             <img
               src="/ouimoove-logo.png"

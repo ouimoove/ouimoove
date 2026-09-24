@@ -5,7 +5,7 @@ import styles from './EventGrid.module.css'
 
 export function EventGrid({
   events, favorites, search, filterCity, filterCategory, sortBy,
-  onOpenEvent, onToggleFav, loading, error,
+  onOpenEvent, onToggleFav, loading, error, onRetry,
 }) {
   const filtered = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10)
@@ -38,6 +38,12 @@ export function EventGrid({
       <div className={styles.state}>
         <div style={{ fontSize: '2rem', marginBottom: 10 }}>⚠️</div>
         <p style={{ color: 'var(--danger)' }}>{error}</p>
+        {onRetry && (
+          <button
+            onClick={onRetry}
+            style={{ marginTop: 14, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 10, padding: '8px 18px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
+          >↻ Réessayer</button>
+        )}
       </div>
     )
   }

@@ -15,9 +15,9 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close()
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((cs) => {
-      const target = event.notification.data?.url ?? '/'
-      const found  = cs.find((c) => c.url === target)
-      return found ? found.focus() : clients.openWindow(target)
+      const target = new URL(event.notification.data?.url ?? '/', self.location.origin).href
+      const found  = cs.find((c) => c.url === target || new URL(c.url).origin === new URL(target).origin)
+      return found ? found.focus().then((c) => (c && 'navigate' in c && c.url !== target ? c.navigate(target) : c)) : clients.openWindow(target)
     })
   )
 })

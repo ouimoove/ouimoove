@@ -1,5 +1,4 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { DEFAULT_EVENTS } from '../data/events.js'
 import { supabase } from '../lib/supabase.js'
 
 function shapeEvent(event) {
@@ -70,9 +69,10 @@ export function useEvents({ user, userRole, setLoad, setErr }) {
 
     if (error) {
       console.error('loadEvents:', error)
-      setErr('events', error.message)
-      setEventsState(DEFAULT_EVENTS)
-      return DEFAULT_EVENTS
+      setErr('events', 'Impossible de charger les événements. Vérifiez votre connexion et réessayez.')
+      // Keep whatever was already loaded — never substitute made-up demo
+      // events, which have no real tickets and would look purchasable.
+      return eventsRef.current
     }
 
     const shaped = (data || []).map(shapeEvent)
