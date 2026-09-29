@@ -382,6 +382,10 @@ function App() {
             onLoadAdmins={store.loadAdmins}
             onPromoteAdmin={organizerActions.onPromoteAdmin}
             onDemoteAdmin={organizerActions.onDemoteAdmin}
+            onLoadRefundRequests={store.loadRefundRequests}
+            onApproveRefund={organizerActions.onApproveRefund}
+            onRejectRefund={organizerActions.onRejectRefund}
+            onFinalizeRefund={organizerActions.onFinalizeRefund}
             onLoadApplications={store.loadApplications}
             onUploadImage={store.uploadEventImage}
             onInvite={store.inviteToEvent}

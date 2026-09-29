@@ -33,6 +33,7 @@ export function OrganizerModal({
   onRequestCity, onLoadCityRequests, onApproveCityRequest, onDenyCityRequest,
   onLoadPendingEvents, onApproveEvent, onRejectEvent,
   onLoadAdmins, onPromoteAdmin, onDemoteAdmin,
+  onLoadRefundRequests, onApproveRefund, onRejectRefund, onFinalizeRefund,
   cities,
   loading = {}, errors = {},
   toast,
@@ -162,6 +163,10 @@ export function OrganizerModal({
             onLoadAdmins={onLoadAdmins}
             onPromoteAdmin={onPromoteAdmin}
             onDemoteAdmin={onDemoteAdmin}
+            onLoadRefundRequests={onLoadRefundRequests}
+            onApproveRefund={onApproveRefund}
+            onRejectRefund={onRejectRefund}
+            onFinalizeRefund={onFinalizeRefund}
           />
         )}
       </ModalBody>

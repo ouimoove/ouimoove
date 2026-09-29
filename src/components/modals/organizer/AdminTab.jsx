@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { formatDate } from '../../../utils/helpers.js'
 
-export function AdminTab({ applications, onPromote, onReject, onRefresh, onLoadVerifRequests, onApproveVerif, onDenyVerif, onLoadCityRequests, onApproveCityRequest, onDenyCityRequest, onLoadPendingEvents, onApproveEvent, onRejectEvent, isSuperAdmin, currentUserId, onLoadAdmins, onPromoteAdmin, onDemoteAdmin }) {
+export function AdminTab({ applications, onPromote, onReject, onRefresh, onLoadVerifRequests, onApproveVerif, onDenyVerif, onLoadCityRequests, onApproveCityRequest, onDenyCityRequest, onLoadPendingEvents, onApproveEvent, onRejectEvent, isSuperAdmin, currentUserId, onLoadAdmins, onPromoteAdmin, onDemoteAdmin, onLoadRefundRequests, onApproveRefund, onRejectRefund, onFinalizeRefund }) {
   const [busy, setBusy] = useState({})
   const [verifRequests, setVerifRequests] = useState([])
   const [denyTarget, setDenyTarget] = useState(null)
@@ -15,6 +15,9 @@ export function AdminTab({ applications, onPromote, onReject, onRefresh, onLoadV
   const [adminBusy, setAdminBusy] = useState({})
   const [newAdminEmail, setNewAdminEmail] = useState('')
   const [addAdminBusy, setAddAdminBusy] = useState(false)
+  const [refunds, setRefunds] = useState([])
+  const [refundBusy, setRefundBusy] = useState({})
+  const [refundPhones, setRefundPhones] = useState({})
 
   // Load verification + city + pending-event requests on mount
   useEffect(() => {
@@ -22,7 +25,19 @@ export function AdminTab({ applications, onPromote, onReject, onRefresh, onLoadV
     onLoadCityRequests?.().then(setCityRequests)
     onLoadPendingEvents?.().then(setPendingEvents)
     if (isSuperAdmin) onLoadAdmins?.().then(setAdmins)
+    onLoadRefundRequests?.().then(setRefunds)
   }, [])
+
+  const refreshRefunds = () => onLoadRefundRequests?.().then(setRefunds)
+
+  // mode: 'payout' (send the money to the buyer's mobile-money number) or
+  // 'manual' (just mark refunded — you pay the buyer yourself).
+  const runRefund = async (fn, id) => {
+    setRefundBusy(b => ({ ...b, [id]: true }))
+    await fn()
+    setRefundBusy(b => ({ ...b, [id]: false }))
+    refreshRefunds()
+  }
 
   const refreshAdmins = () => onLoadAdmins?.().then(setAdmins)
 
@@ -140,6 +155,78 @@ export function AdminTab({ applications, onPromote, onReject, onRefresh, onLoadV
           )}
         </div>
       )}
+
+      {/* ── Refund requests ── */}
+      <div style={{ marginBottom: 24, paddingBottom: 20, borderBottom: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <p style={{ color: 'var(--muted)', fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
+            ↩ Demandes de remboursement ({refunds.length})
+          </p>
+          <button onClick={refreshRefunds} style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, padding: '5px 12px', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.78rem' }}>↻</button>
+        </div>
+
+        {refunds.length === 0 ? (
+          <p style={{ color: 'var(--muted)', fontSize: '0.82rem' }}>Aucune demande de remboursement en attente.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {refunds.map(r => {
+              const canPayout = r.payment_method === 'tmoney' || r.payment_method === 'flooz'
+              const busyR = refundBusy[r.id]
+              const processing = r.status === 'processing'
+              return (
+                <div key={r.id} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 14px' }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>
+                    {r.buyer_name || 'Acheteur'} — {Number(r.order_total).toLocaleString('fr-FR')} FCFA
+                  </div>
+                  <div style={{ color: 'var(--muted)', fontSize: '0.75rem', marginTop: 2 }}>
+                    {r.event_title} · payé par {r.payment_method || '—'} · {formatDate(r.created_at)}
+                  </div>
+                  {r.reason && <div style={{ color: 'var(--text)', fontSize: '0.78rem', marginTop: 6 }}>« {r.reason} »</div>}
+                  {r.payout_error && <div style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: 6 }}>⚠ {r.payout_error}</div>}
+
+                  {processing ? (
+                    <div style={{ marginTop: 10 }}>
+                      <button
+                        disabled={busyR}
+                        onClick={() => runRefund(() => onFinalizeRefund(r.id), r.id)}
+                        style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', cursor: 'pointer', fontSize: '0.78rem', opacity: busyR ? 0.5 : 1 }}
+                      >{busyR ? '…' : 'Vérifier le statut du paiement'}</button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginTop: 10 }}>
+                      {canPayout && (
+                        <input
+                          value={refundPhones[r.id] ?? r.payout_phone ?? ''}
+                          onChange={e => setRefundPhones(p => ({ ...p, [r.id]: e.target.value }))}
+                          placeholder='N° Mobile Money (8 chiffres)'
+                          style={{ flex: '1 1 150px', minWidth: 130, background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 10px', color: 'var(--text)', fontSize: '0.8rem', outline: 'none' }}
+                        />
+                      )}
+                      <button
+                        disabled={busyR}
+                        onClick={() => { if (window.confirm('Refuser cette demande ?')) runRefund(() => onRejectRefund(r.id), r.id) }}
+                        style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid rgba(239,68,68,.4)', background: 'rgba(239,68,68,.1)', color: 'var(--danger)', cursor: 'pointer', fontSize: '0.75rem', opacity: busyR ? 0.5 : 1 }}
+                      >✗ Refuser</button>
+                      <button
+                        disabled={busyR}
+                        onClick={() => { if (window.confirm('Marquer comme remboursé SANS envoyer d’argent ? Vous devrez payer l’acheteur vous-même.')) runRefund(() => onApproveRefund(r.id, 'manual'), r.id) }}
+                        style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', cursor: 'pointer', fontSize: '0.75rem', opacity: busyR ? 0.5 : 1 }}
+                      >Paiement manuel</button>
+                      {canPayout && (
+                        <button
+                          disabled={busyR}
+                          onClick={() => { if (window.confirm('Envoyer ' + Number(r.order_total).toLocaleString('fr-FR') + ' FCFA à ce numéro depuis votre solde PayDunya ?')) runRefund(() => onApproveRefund(r.id, 'payout', refundPhones[r.id] ?? r.payout_phone ?? ''), r.id) }}
+                          style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid rgba(34,197,94,.4)', background: 'rgba(34,197,94,.12)', color: 'var(--success)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, opacity: busyR ? 0.5 : 1 }}
+                        >{busyR ? '…' : '✓ Rembourser'}</button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
 
       {/* ── Pending events (moderation queue) ── */}
       <div style={{ marginBottom: 24 }}>

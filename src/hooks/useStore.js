@@ -217,6 +217,11 @@ export function useStore() {
     promoteToOrganizer: admin.promoteToOrganizer,
     rejectApplication:  admin.rejectApplication,
 
+    loadRefundRequests: admin.loadRefundRequests,
+    approveRefund:  admin.approveRefund,
+    rejectRefund:   admin.rejectRefund,
+    finalizeRefund: admin.finalizeRefund,
+
     loadAdmins: admin.loadAdmins,
     promoteToAdmin: admin.promoteToAdmin,
     demoteAdmin: admin.demoteAdmin,

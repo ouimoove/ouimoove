@@ -172,7 +172,12 @@ export function AttendeesTab({ myEvents, organizerOrders, onCheckin, onCheckinBy
                   {fullyIn && <span style={{ fontSize: '0.75rem', color: 'var(--success)', padding: '5px 6px', fontWeight: 700 }}>✓ Complet</span>}
                   {!isRefunded && (
                     <button
-                      onClick={() => { if (window.confirm(`Rembourser ${p.userName} ?`)) onRefund(p.id) }}
+                      title="Demander un remboursement"
+                      onClick={() => {
+                        if (!window.confirm(`Demander le remboursement de ${p.userName} ? Un administrateur devra l’approuver.`)) return
+                        const reason = window.prompt('Motif du remboursement (optionnel) :') ?? ''
+                        onRefund(p.id, reason)
+                      }}
                       style={{ padding: '5px 8px', borderRadius: 8, border: '1px solid rgba(239,68,68,.3)', background: 'rgba(239,68,68,.08)', color: 'var(--danger)', cursor: 'pointer', fontSize: '0.75rem' }}
                     >
                       ↩

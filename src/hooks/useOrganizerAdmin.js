@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase.js'
+import { edgeErrorMessage } from '../utils/helpers.js'
 
 // Organizer applications, account verification, and city requests — the
 // admin-moderation-adjacent flows that only ever need `user`. Fully
@@ -168,7 +169,29 @@ export function useOrganizerAdmin({ user }) {
     return data
   }, [])
 
+  // ── REFUND REQUESTS (admin) ────────────────────────────────
+  const loadRefundRequests = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('refund_requests')
+      .select('id, order_id, reason, status, buyer_name, event_title, order_total, payment_method, payout_phone, payout_error, payout_token, created_at')
+      .in('status', ['pending', 'processing'])
+      .order('created_at', { ascending: true })
+    if (error) { console.error('loadRefundRequests:', error); return [] }
+    return data || []
+  }, [])
+
+  const callRefund = useCallback(async (body) => {
+    const { data, error } = await supabase.functions.invoke('process-refund', { body })
+    if (error || data?.error) return { ok: false, error: (await edgeErrorMessage(error, data)) || 'Erreur' }
+    return { ok: !!data?.ok, error: data?.ok ? null : data?.error, status: data?.status }
+  }, [])
+
+  const approveRefund  = useCallback((requestId, mode, phone) => callRefund({ action: 'approve', requestId, mode, phone }), [callRefund])
+  const rejectRefund   = useCallback((requestId) => callRefund({ action: 'reject', requestId }), [callRefund])
+  const finalizeRefund = useCallback((requestId) => callRefund({ action: 'finalize', requestId }), [callRefund])
+
   return {
+    loadRefundRequests, approveRefund, rejectRefund, finalizeRefund,
     applications, loadApplications, promoteToOrganizer, rejectApplication, resetLocalState,
     submitVerification, loadVerificationStatus, loadVerificationRequests, approveVerification, denyVerification,
     loadCities, requestCity, loadCityRequests, approveCityRequest, denyCityRequest,

@@ -23,10 +23,31 @@ export function useOrganizerActions(store, toast, { setCities }) {
     toast('Événement supprimé', 'info')
   }
 
-  const onRefund = async (orderId) => {
-    const ok = await store.refundOrder(orderId)
-    if (!ok) { toast('Impossible de rembourser la commande', 'error'); return }
-    toast('Commande remboursée ↩', 'info')
+  const onRefund = async (orderId, reason) => {
+    const r = await store.refundOrder(orderId, reason)
+    if (!r.ok) { toast(r.error || 'Impossible d’envoyer la demande', 'error'); return }
+    toast('Demande de remboursement envoyée à l’administrateur ↩', 'info')
+  }
+
+  const onApproveRefund = async (requestId, mode, phone) => {
+    const r = await store.approveRefund(requestId, mode, phone)
+    if (r?.ok) toast(mode === 'payout' ? 'Remboursement envoyé ✓' : 'Commande marquée remboursée ✓', 'success')
+    else toast(r?.error || 'Impossible de traiter le remboursement', 'error')
+    return r
+  }
+
+  const onRejectRefund = async (requestId) => {
+    const r = await store.rejectRefund(requestId)
+    if (r?.ok) toast('Demande refusée', 'info')
+    else toast(r?.error || 'Impossible de refuser', 'error')
+    return r
+  }
+
+  const onFinalizeRefund = async (requestId) => {
+    const r = await store.finalizeRefund(requestId)
+    if (r?.ok) toast('Remboursement confirmé ✓', 'success')
+    else toast(r?.error || 'Statut inconnu', 'info')
+    return r
   }
 
   const onCheckin = async (purchaseId, eventId) => {
@@ -116,5 +137,6 @@ export function useOrganizerActions(store, toast, { setCities }) {
     onApproveVerif, onDenyVerif,
     onApproveEvent, onRejectEvent,
     onPromoteAdmin, onDemoteAdmin,
+    onApproveRefund, onRejectRefund, onFinalizeRefund,
   }
 }

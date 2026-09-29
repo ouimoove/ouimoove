@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase.js'
+import { edgeErrorMessage } from '../utils/helpers.js'
 
 function shapeMyOrder(order, eventsRef, userName = '') {
   const items = (order.order_items || []).map((item) => {
@@ -152,24 +153,17 @@ export function useOrders({ user, events, loadEvents, loadMyEvents, setLoad, set
     setOrganizerStats(data)
   }, [setLoad, setErr])
 
-  const refundOrder = useCallback(async (orderId) => {
-    const { error } = await supabase.from('orders').update({ payment_status: 'refunded' }).eq('id', orderId)
-    if (error) { console.error('refundOrder:', error); return false }
-
-    const { data: items } = await supabase.from('order_items').select('ticket_type_id, quantity, is_resale').eq('order_id', orderId)
-    for (const item of items || []) {
-      if (item.is_resale) continue // resale tickets don't affect quantity_sold
-      const tk = events.flatMap(e => e.tickets).find(t => t.id === item.ticket_type_id)
-      if (!tk) continue
-      await supabase.from('ticket_types')
-        .update({ quantity_sold: Math.max(0, (tk.sold || 0) - item.quantity) })
-        .eq('id', item.ticket_type_id)
+  // An organizer can only REQUEST a refund; an admin approves it (see the
+  // process-refund edge function). The order stays 'paid' until then.
+  const refundOrder = useCallback(async (orderId, reason = '') => {
+    const { data, error } = await supabase.functions.invoke('process-refund', {
+      body: { action: 'request', orderId, reason },
+    })
+    if (error || data?.error) {
+      return { ok: false, error: (await edgeErrorMessage(error, data)) || 'Impossible d’envoyer la demande.' }
     }
-
-    await loadEvents()
-    await loadOrganizerOrders(user?.id)
-    return true
-  }, [user, events, loadEvents, loadOrganizerOrders])
+    return { ok: true }
+  }, [])
 
   // ── CHECK-IN ───────────────────────────────────────────────
   const checkinPurchase = useCallback(async (purchaseId, eventId = null) => {

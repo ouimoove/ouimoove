@@ -169,7 +169,9 @@ serve(async (req) => {
       order_id: orderId,
       type:     orderType,
       user_id:  user.id,
-      payload:  { ...payload, total },
+      // `phone` is kept so an approved refund can be paid back to the same
+      // mobile-money number the buyer used.
+      payload:  { ...payload, total, phone: method !== 'card' && phone ? String(phone).slice(0, 20) : null },
     })
     if (orderError || pendingError) {
       console.error('create-paydunya-payment: could not record order', orderError ?? pendingError)
