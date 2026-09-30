@@ -39,3 +39,14 @@ export function clickable(handler) {
     },
   }
 }
+
+// The site's public address. Links that leave the app (shared events,
+// invitations) must use this, not window.location.origin: inside the Android
+// app the origin is https://localhost, which is useless to whoever receives
+// the link (and WhatsApp won't even make it clickable).
+export const PUBLIC_URL = 'https://ouimoove.app'
+
+// Shareable event link. /e/<id> is served by api/og.js, which puts the
+// event's title, date and image in the page's preview tags so WhatsApp,
+// Facebook, etc. show a proper card, then hands the visitor to the app.
+export const eventShareUrl = (id) => `${PUBLIC_URL}/e/${encodeURIComponent(id)}`

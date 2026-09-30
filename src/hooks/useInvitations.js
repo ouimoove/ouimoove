@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import { supabase } from '../lib/supabase.js'
+import { PUBLIC_URL } from '../utils/helpers.js'
 
 // Private-event invitations. Independent — only needs `user`.
 export function useInvitations({ user }) {
@@ -11,7 +12,7 @@ export function useInvitations({ user }) {
       .select('token')
       .single()
     if (error) { console.error('inviteToEvent:', error); return { ok: false, error: error.message } }
-    const inviteUrl = `${window.location.origin}/?invite=${data.token}`
+    const inviteUrl = `${PUBLIC_URL}/?invite=${data.token}`
     // Send email (fire-and-forget)
     supabase.functions.invoke('send-invitation', {
       body: { to: email.trim(), inviterName: user.name, eventTitle, eventDate, eventCity, inviteUrl }

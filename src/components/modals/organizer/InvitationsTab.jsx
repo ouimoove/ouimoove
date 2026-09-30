@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { inputStyle, labelStyle, groupStyle } from './shared.jsx'
+import { PUBLIC_URL } from '../../../utils/helpers.js'
 
 export function InvitationsTab({ myEvents, onInvite, onLoadInvitations, toast }) {
   const [selectedId,   setSelectedId]   = useState(myEvents[0]?.id ?? '')
@@ -39,7 +40,7 @@ export function InvitationsTab({ myEvents, onInvite, onLoadInvitations, toast })
   }
 
   const copyLink = (token) => {
-    const url = `${window.location.origin}/?invite=${token}`
+    const url = `${PUBLIC_URL}/?invite=${token}`
     navigator.clipboard.writeText(url).then(() => {
       setCopied(token)
       setTimeout(() => setCopied(null), 2000)

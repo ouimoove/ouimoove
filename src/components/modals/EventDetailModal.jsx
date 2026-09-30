@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Modal, ModalBody } from '../Modal.jsx'
-import { formatDate, fmtPrice } from '../../utils/helpers.js'
+import { formatDate, fmtPrice, eventShareUrl } from '../../utils/helpers.js'
 import styles from './EventDetailModal.module.css'
 
 export function EventDetailModal({ open, event, onClose, onAddToCart, toast }) {
@@ -12,7 +12,7 @@ export function EventDetailModal({ open, event, onClose, onAddToCart, toast }) {
 
   const isPast = event.date < new Date().toISOString().slice(0, 10)
 
-  const shareUrl = `${window.location.origin}${window.location.pathname}?event=${event.id}`
+  const shareUrl = eventShareUrl(event.id)
   const shareText = `${event.title} · ${formatDate(event.date)} · ${event.city}`
 
   const shareWhatsapp = () => window.open(`https://wa.me/?text=${encodeURIComponent(`${shareText}\n${shareUrl}`)}`, '_blank', 'noopener')
