@@ -59,9 +59,10 @@ export function EventGrid({
 
   return (
     <div className={styles.grid}>
-      {filtered.map((e) => (
+      {filtered.map((e, i) => (
         <EventCard
           key={e.id}
+          index={i}
           event={e}
           isFav={favorites.includes(e.id)}
           onOpen={onOpenEvent}

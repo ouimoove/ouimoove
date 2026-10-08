@@ -1,11 +1,11 @@
 import { formatDate, minPrice, fmtPrice } from '../utils/helpers.js'
 import styles from './EventCard.module.css'
 
-export function EventCard({ event, isFav, onOpen, onToggleFav }) {
+export function EventCard({ event, isFav, onOpen, onToggleFav, index = 0 }) {
   const mp = minPrice(event)
 
   return (
-    <article className={styles.card} onClick={() => onOpen(event.id)}>
+    <article className={styles.card} style={{ '--i': index }} onClick={() => onOpen(event.id)}>
       <div className={styles.imgWrap}>
         {event.imageUrl ? (
           <img

@@ -11,15 +11,20 @@ export function Hero({
 }) {
   return (
     <section className={styles.hero}>
+      {/* Entrance: headline words, then subtitle, search, categories and the
+          organizer CTA rise in one after another (--i = order in the sequence). */}
       <h1 className={styles.heading}>
-        Découvrez les <em>meilleurs</em><br />événements
+        <span className={styles.word} style={{ '--i': 0 }}>Découvrez</span>{' '}
+        <span className={styles.word} style={{ '--i': 1 }}>les</span>{' '}
+        <em className={styles.word} style={{ '--i': 2 }}>meilleurs</em><br />
+        <span className={styles.word} style={{ '--i': 3 }}>événements</span>
       </h1>
-      <p className={styles.sub}>
+      <p className={[styles.sub, styles.rise].join(" ")} style={{ '--i': 5 }}>
         Concerts, festivals, conférences et plus encore —<br />
         réservez vos billets en quelques secondes.
       </p>
 
-      <div className={styles.searchBar}>
+      <div className={[styles.searchBar, styles.rise].join(" ")} style={{ '--i': 6 }}>
         <span>🔍</span>
         <input
           className={styles.searchInput}
@@ -38,7 +43,7 @@ export function Hero({
         </select>
       </div>
 
-      <div className={styles.pills}>
+      <div className={[styles.pills, styles.rise].join(" ")} style={{ '--i': 7 }}>
         <button
           className={[styles.pill, filterCategory === '' ? styles.active : ''].join(' ')}
           onClick={() => setFilterCategory('')}
@@ -54,12 +59,12 @@ export function Hero({
         ))}
       </div>
 
-      <div className={styles.createCta} {...clickable(onCreateEvent)}>
+      <div className={[styles.createCta, styles.rise, styles.ctaGlow].join(" ")} style={{ '--i': 8 }} {...clickable(onCreateEvent)}>
         <span>🎤 Vous organisez un événement ?</span>
         <span className={styles.ctaLink}>Publiez-le gratuitement →</span>
       </div>
 
-      <div className={styles.sortBar}>
+      <div className={[styles.sortBar, styles.rise].join(" ")} style={{ '--i': 9 }}>
         <span>Trier par :</span>
         <select
           className={styles.sortSelect}
