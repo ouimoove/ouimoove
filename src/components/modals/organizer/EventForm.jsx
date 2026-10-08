@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ORGANIZER_FEE_PCT, organizerNet } from '../../../utils/helpers.js'
 import { CATEGORIES, CITIES } from '../../../data/events.js'
 import { inputStyle, labelStyle, groupStyle } from './shared.jsx'
 
@@ -175,9 +176,22 @@ export function EventForm({ initial, submitLabel, onSubmit, onCancel, onUploadIm
           )}
         </div>
       ))}
-      <button onClick={addTicketType} style={{ background: 'transparent', border: '1px dashed var(--border)', color: 'var(--muted)', borderRadius: 10, width: '100%', padding: '7px 0', cursor: 'pointer', fontSize: '0.82rem', marginBottom: 18 }}>
+      <button onClick={addTicketType} style={{ background: 'transparent', border: '1px dashed var(--border)', color: 'var(--muted)', borderRadius: 10, width: '100%', padding: '7px 0', cursor: 'pointer', fontSize: '0.82rem', marginBottom: 12 }}>
         + Ajouter un type de billet
       </button>
+
+      {/* Commission notice — what the organizer actually receives per ticket */}
+      <div style={{ background: 'rgba(244,154,14,.08)', border: '1px solid rgba(244,154,14,.35)', borderRadius: 10, padding: '10px 14px', marginBottom: 18, fontSize: '0.8rem', lineHeight: 1.5 }}>
+        <div style={{ fontWeight: 600, color: 'var(--text)' }}>💡 Commission OuiMoove : {ORGANIZER_FEE_PCT}% par billet vendu</div>
+        <div style={{ color: 'var(--muted)' }}>Prélevée sur vos recettes (frais de paiement inclus). Les billets gratuits ne sont pas facturés.</div>
+        {ticketTypes.some(t => Number(t.price) > 0) && (
+          <div style={{ marginTop: 6, color: 'var(--text)' }}>
+            {ticketTypes.filter(t => Number(t.price) > 0).map((t, i) => (
+              <div key={i}>{t.name || 'Billet'} : {Number(t.price).toLocaleString('fr-FR')} FCFA → <b>vous recevez {organizerNet(t.price).toLocaleString('fr-FR')} FCFA</b></div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {error && <p style={{ color: 'var(--danger)', fontSize: '0.82rem', marginBottom: 12 }}>{error}</p>}
 

@@ -295,7 +295,7 @@ export const TERMS_SECTIONS = [
   ['2. Votre compte',
     "Vous êtes responsable de l’exactitude des informations de votre compte et de la confidentialité de vos identifiants. Vous devez avoir l’âge légal pour acheter des billets."],
   ['3. Billets et paiements',
-    "OuiMoove met en relation les organisateurs et le public. Les billets sont payés via nos partenaires de paiement (Tmoney, Flooz, carte bancaire). Un maximum de 10 billets par commande s’applique. Votre billet électronique (QR code) doit être présenté à l’entrée."],
+    "OuiMoove met en relation les organisateurs et le public. Les billets sont payés via nos partenaires de paiement (Tmoney, Flooz, carte bancaire). Un maximum de 10 billets par commande s’applique. Votre billet électronique (QR code) doit être présenté à l’entrée. Pour les organisateurs : OuiMoove perçoit une commission de 10 % sur le prix de chaque billet payant vendu, frais de paiement inclus, déduite des recettes reversées à l’organisateur. Les billets gratuits ne donnent lieu à aucune commission."],
   ['4. Revente entre utilisateurs',
     "Le Marché de revente permet de revendre un billet que vous ne pouvez plus utiliser. Le prix est fixé par le vendeur. OuiMoove n’est pas responsable des transactions entre utilisateurs au-delà de la sécurisation du transfert du billet."],
   ['5. Remboursements',

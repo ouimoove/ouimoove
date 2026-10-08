@@ -50,3 +50,8 @@ export const PUBLIC_URL = 'https://ouimoove.app'
 // event's title, date and image in the page's preview tags so WhatsApp,
 // Facebook, etc. show a proper card, then hands the visitor to the app.
 export const eventShareUrl = (id) => `${PUBLIC_URL}/e/${encodeURIComponent(id)}`
+
+// OuiMoove's commission on every paid ticket, charged to the organizer
+// (deducted from what they receive). Free tickets carry no fee.
+export const ORGANIZER_FEE_PCT = 10
+export const organizerNet = (gross) => Math.round((Number(gross) || 0) * (100 - ORGANIZER_FEE_PCT) / 100)

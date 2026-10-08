@@ -1,4 +1,4 @@
-import { formatDate } from '../../../utils/helpers.js'
+import { formatDate, ORGANIZER_FEE_PCT, organizerNet } from '../../../utils/helpers.js'
 import { Spinner, ErrorBanner } from './shared.jsx'
 
 export function OverviewTab({ organizerStats, loading, errors, onRefresh }) {
@@ -9,7 +9,8 @@ export function OverviewTab({ organizerStats, loading, errors, onRefresh }) {
   const stats = [
     { label: 'Événements publiés',  value: s.published_events   ?? 0,                          color: 'var(--orange)'  },
     { label: 'Billets vendus',      value: s.total_tickets_sold ?? 0,                          color: 'var(--purple2)' },
-    { label: 'Revenus (FCFA)',      value: (s.total_revenue_cfa ?? 0).toLocaleString('fr-FR'), color: 'var(--success)' },
+    { label: 'Ventes brutes (FCFA)', value: (s.total_revenue_cfa ?? 0).toLocaleString('fr-FR'), color: 'var(--orange)' },
+    { label: `Net après commission ${ORGANIZER_FEE_PCT}% (FCFA)`, value: organizerNet(s.total_revenue_cfa ?? 0).toLocaleString('fr-FR'), color: 'var(--success)' },
     { label: 'Participants uniques',value: s.unique_attendees   ?? 0,                          color: 'var(--orange2)' },
   ]
 
@@ -45,7 +46,7 @@ export function OverviewTab({ organizerStats, loading, errors, onRefresh }) {
                   </div>
                   <div style={{ textAlign: 'center' }}>
                     <div style={{ fontWeight: 700, color: 'var(--orange)', fontSize: '0.95rem' }}>{(e.revenue_cfa || 0).toLocaleString('fr-FR')}</div>
-                    <div style={{ color: 'var(--muted)', fontSize: '0.7rem' }}>FCFA</div>
+                    <div style={{ color: 'var(--muted)', fontSize: '0.7rem' }}>FCFA brut · net {organizerNet(e.revenue_cfa).toLocaleString('fr-FR')}</div>
                   </div>
                   <div style={{ textAlign: 'center' }}>
                     <div style={{ fontWeight: 700, color: 'var(--success)', fontSize: '0.95rem' }}>{e.attendee_count}</div>
