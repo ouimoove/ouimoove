@@ -33,6 +33,8 @@ const WEDDING_COLUMNS = ['id', 'groom_name', 'bride_name', 'family_name', 'groom
 const weddingRow = (w) => Object.fromEntries(WEDDING_COLUMNS.filter((k) => k in w).map((k) => [k, w[k]]))
 const clean = (r) => {
   const { local, ...rest } = r // eslint-disable-line no-unused-vars
+  // Plans made on the device can carry explicit nulls for list columns that are NOT NULL.
+  if ('events' in rest && rest.events == null) rest.events = []
   return rest
 }
 
@@ -57,7 +59,8 @@ export const remote = {
   async insert(kind, rows) {
     const out = []
     for (const part of chunks(rows.map(clean))) {
-      out.push(...check(await supabase.from(TABLE[kind]).insert(part).select()))
+      // defaultToNull:false → fields a row lacks use the column default instead of NULL
+      out.push(...check(await supabase.from(TABLE[kind]).insert(part, { defaultToNull: false }).select()))
     }
     return out
   },

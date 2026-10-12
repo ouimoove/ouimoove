@@ -44,7 +44,8 @@ Deno.serve(async (req) => {
 
   const payload = await req.text()
   const headers = Object.fromEntries(req.headers)
-  const hookSecret = Deno.env.get('SEND_EMAIL_HOOK_SECRET') ?? ''
+  // The dashboard hands out the secret as "v1,whsec_<base64>"; the library wants the bare base64.
+  const hookSecret = (Deno.env.get('SEND_EMAIL_HOOK_SECRET') ?? '').trim().replace(/^v1,/, '').replace(/^whsec_/, '')
   const RESEND_KEY = Deno.env.get('RESEND_API_KEY')
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 
