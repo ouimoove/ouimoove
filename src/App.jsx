@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from 'react'
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react'
 import { useStore } from './hooks/useStore.js'
 import { useToast } from './hooks/useToast.js'
 import { useCheckoutFlow } from './hooks/actions/useCheckoutFlow.js'
@@ -11,7 +11,10 @@ import { Navbar } from './components/Navbar.jsx'
 import { Hero } from './components/Hero.jsx'
 import { EventGrid } from './components/EventGrid.jsx'
 import { Footer } from './components/Footer.jsx'
+import { HowItWorks, FaqSection, CtaBand } from './components/HomeSections.jsx'
 import { Toast } from './components/Toast.jsx'
+import { DEMO } from './data/demoEvents.js'
+import { navigate } from './weddings/router.js'
 
 // Every modal below is code-split: none of it is needed for first paint
 // (Navbar/Hero/EventGrid above stay eagerly bundled since that's the page
@@ -40,6 +43,13 @@ const RSVPModal         = lazy(() => import('./components/modals/RSVPModal.jsx')
 
 function App() {
   const store = useStore()
+  // Dev only: http://localhost:5173/?demo swaps in sample events to review the homepage
+  // with a full catalogue. Compiled out of the production build.
+  const demo = DEMO && new URLSearchParams(window.location.search).has('demo')
+  const catalog = useMemo(
+    () => (demo ? DEMO.events() : store.events),
+    [store.events],
+  )
   const { toasts, toast } = useToast()
 
   const [modal,           setModal]           = useState(null)
@@ -49,6 +59,7 @@ function App() {
   const [filterCity,      setFilterCity]      = useState('')
   const [filterCategory,  setFilterCategory]  = useState('')
   const [sortBy,          setSortBy]          = useState('date')
+  const [maxPrice,        setMaxPrice]        = useState(null)   // null = no budget limit
   const [cities,          setCities]          = useState([])
 
   // Marks a modal as "ever opened" the first time, which both shows it
@@ -84,6 +95,13 @@ function App() {
   useEffect(() => {
     if (store.recoveryMode) open('reset')
   }, [store.recoveryMode]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Dev only: /?demo&modal=tickets (or profile, cart, …) opens that popup for review.
+  useEffect(() => {
+    if (!demo) return
+    const m = new URLSearchParams(window.location.search).get('modal')
+    if (m) open(m)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Service worker + cities ────────────────────────────────
   useEffect(() => {
@@ -139,11 +157,11 @@ function App() {
   useEffect(() => {
     if (modal) return
     const id = new URLSearchParams(window.location.search).get('event')
-    if (!id || !store.events.length) return
-    if (!store.events.some((e) => e.id === id)) return
+    if (!id || !catalog.length) return
+    if (!catalog.some((e) => e.id === id)) return
     setSelectedEventId(id)
     open('event')
-  }, [store.events.length]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [catalog.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── First-visit onboarding ─────────────────────────────────
   useEffect(() => {
@@ -192,7 +210,7 @@ function App() {
     const wasFav = store.favorites.includes(eventId)
     const ok = await store.toggleFavorite(eventId)
     if (!ok) { toast('Impossible de mettre à jour les favoris', 'error'); return }
-    toast(wasFav ? 'Retiré des favoris' : 'Ajouté aux favoris ❤️', wasFav ? 'info' : 'success')
+    toast(wasFav ? 'Retiré des favoris' : 'Ajouté aux favoris', wasFav ? 'info' : 'success')
   }
 
   const handleCreateEvent = async () => {
@@ -204,18 +222,22 @@ function App() {
     open('organizer')
   }
 
+  // Ouimoove Weddings is its own area of the app (see main.jsx).
+  const openWeddings = () => navigate('/mariage')
+
   const handleLogoClick = () => {
     setSearch('')
     setFilterCity('')
     setFilterCategory('')
     setSortBy('date')
+    setMaxPrice(null)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   // My listings (to show "en vente" badge on tickets)
   const myListings = store.resaleListings.filter(l => l.seller_id === store.user?.id)
 
-  const selectedEvent = store.events.find((e) => e.id === selectedEventId)
+  const selectedEvent = catalog.find((e) => e.id === selectedEventId)
 
   return (
     <>
@@ -235,6 +257,7 @@ function App() {
         onLogoClick={handleLogoClick}
         onMarket={() => open('market')}
         onCreateEvent={handleCreateEvent}
+        onWeddings={openWeddings}
       />
 
       <Hero
@@ -242,11 +265,16 @@ function App() {
         filterCity={filterCity}   setFilterCity={setFilterCity}
         filterCategory={filterCategory} setFilterCategory={setFilterCategory}
         sortBy={sortBy}           setSortBy={setSortBy}
+        events={catalog}
+        maxPrice={maxPrice}       setMaxPrice={setMaxPrice}
+        onOpenEvent={openEvent}
         onCreateEvent={handleCreateEvent}
+        onWeddings={openWeddings}
       />
 
       <EventGrid
-        events={store.events}
+        events={catalog}
+        maxPrice={maxPrice}
         favorites={store.favorites}
         loading={store.loading.events}
         error={store.errors.events}
@@ -312,7 +340,7 @@ function App() {
         {openedModals.has('tickets') && (
           <MyTicketsModal
             open={modal === 'tickets'}
-            purchases={store.myPurchases}
+            purchases={demo ? DEMO.purchases() : store.myPurchases}
             myListings={myListings}
             onClose={close}
             toast={toast}
@@ -325,8 +353,8 @@ function App() {
         {openedModals.has('favorites') && (
           <FavoritesModal
             open={modal === 'favorites'}
-            events={store.events}
-            favorites={store.favorites}
+            events={catalog}
+            favorites={demo ? DEMO.favorites : store.favorites}
             onClose={close}
             onOpenEvent={openEvent}
             onToggleFav={handleToggleFav}
@@ -337,7 +365,7 @@ function App() {
         {openedModals.has('profile') && (
           <ProfileModal
             open={modal === 'profile'}
-            user={store.user}
+            user={demo ? DEMO.user : store.user}
             userNumber={store.userNumber}
             isVerified={store.isVerified}
             isOrganizer={store.isOrganizer}
@@ -357,13 +385,13 @@ function App() {
         {openedModals.has('organizer') && (
           <OrganizerModal
             open={modal === 'organizer'}
-            user={store.user}
+            user={demo ? DEMO.user : store.user}
             isAdmin={store.isAdmin}
             isSuperAdmin={store.isSuperAdmin}
-            myEvents={store.myEvents}
+            myEvents={demo ? catalog.slice(0, 4) : store.myEvents}
             purchases={store.purchases}
             organizerOrders={store.organizerOrders}
-            organizerStats={store.organizerStats}
+            organizerStats={demo ? DEMO.stats() : store.organizerStats}
             applications={store.applications}
             loading={store.loading}
             errors={store.errors}
@@ -409,9 +437,9 @@ function App() {
         {openedModals.has('market') && (
           <ResaleMarketModal
             open={modal === 'market'}
-            listings={store.resaleListings}
-            currentUserId={store.user?.id}
-            loading={store.loading.resale}
+            listings={demo ? DEMO.listings() : store.resaleListings}
+            currentUserId={demo ? DEMO.user.id : store.user?.id}
+            loading={demo ? false : store.loading.resale}
             onClose={close}
             onBuy={async (listing, method, phone) => {
               if (!store.user) { open('login'); return null }
@@ -499,6 +527,10 @@ function App() {
         )}
       </Suspense>
 
+      <HowItWorks />
+      <FaqSection onContact={() => open('contact')} />
+      <CtaBand onCreateEvent={handleCreateEvent} onWeddings={openWeddings} />
+
       <Footer
         onHowItWorks={() => open('onboarding')}
         onFaq={() => open('faq')}
@@ -507,6 +539,7 @@ function App() {
         onPrivacy={() => open('privacy')}
         onMarket={() => open('market')}
         onCreateEvent={handleCreateEvent}
+        onWeddings={openWeddings}
       />
 
       <Toast toasts={toasts} />

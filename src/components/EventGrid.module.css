@@ -1,20 +1,40 @@
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px; padding: 0 2rem 5rem; position: relative; z-index: 1;
+.section { max-width: 1160px; margin: 0 auto; padding: 56px 2rem 5rem; position: relative; z-index: 1; scroll-margin-top: 90px; }
+.head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 26px; }
+.eyebrow { font-weight: 700; font-size: .8rem; letter-spacing: 2px; color: var(--orange); }
+.title { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.7rem, 3.6vw, 2.6rem); color: var(--plum); margin-top: 2px; line-height: 1.1; }
+.count {
+  flex: none; background: var(--lilac); color: var(--purple); font-weight: 700; font-size: .85rem;
+  padding: 7px 16px; border-radius: var(--pill);
 }
-.state {
-  text-align: center; padding: 80px 2rem;
-  color: var(--muted); z-index: 1; position: relative;
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 26px; }
+
+.state, .empty { text-align: center; padding: 70px 2rem; color: var(--muted); position: relative; z-index: 1; scroll-margin-top: 90px; }
+.empty { background: #fff; border: 2px dashed #e4d3df; border-radius: 28px; padding: 56px 2rem; }
+.empty small { display: block; margin-top: 6px; }
+.stateIcon {
+  width: 72px; height: 72px; margin: 0 auto 14px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--lilac); color: var(--purple); font-size: 1.9rem;
 }
 .spinner {
-  font-size: 2rem; margin-bottom: 12px;
-  display: inline-block; animation: spin 1s linear infinite;
+  width: 38px; height: 38px; margin: 0 auto 14px; border-radius: 50%;
+  border: 4px solid var(--lilac); border-top-color: var(--purple); animation: spin .9s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+.retry {
+  margin-top: 16px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+  background: var(--purple); color: #fff; border: 0; border-radius: var(--pill); padding: 11px 24px; font-weight: 700; font-size: .92rem;
+  transition: background .2s, transform .2s var(--ease-out);
+}
+.retry:hover { background: var(--deep); transform: translateY(-2px); }
+
 @media (max-width: 900px) {
-  .grid { padding: 0 1.25rem 4rem; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .section { padding: 44px 1.25rem 4rem; }
+  .grid { grid-template-columns: repeat(2, 1fr); gap: 18px; }
 }
-@media (max-width: 560px) {
-  .grid { padding: 0 1rem 4rem; grid-template-columns: 1fr; gap: 12px; }
+@media (max-width: 600px) {
+  .section { padding: 36px 1rem 4rem; }
+  .grid { grid-template-columns: 1fr; gap: 18px; }
+  .head { flex-direction: column; align-items: flex-start; gap: 10px; }
 }
+@media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 3s; } }

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { QRScanner } from '../../QRScanner.jsx'
 import { Spinner, ErrorBanner, inputStyle } from './shared.jsx'
 import { CheckinDialog } from './CheckinDialog.jsx'
+import { Icon } from '../../Icon.jsx'
 
 export function AttendeesTab({ myEvents, organizerOrders, onCheckin, onCheckinByRef, onCheckinPartial, onLookupByRef, onRefund, loading, errors, onRefresh }) {
   const [selectedId,  setSelectedId]  = useState(myEvents[0]?.id ?? '')
@@ -71,7 +72,7 @@ export function AttendeesTab({ myEvents, organizerOrders, onCheckin, onCheckinBy
             boxShadow: '0 4px 16px rgba(139,34,118,.3)',
           }}
         >
-          📷 Scanner un billet
+          <Icon name="camera" /> Scanner un billet
         </button>
       </div>
 
@@ -95,7 +96,7 @@ export function AttendeesTab({ myEvents, organizerOrders, onCheckin, onCheckinBy
           </button>
         </div>
         {scanResult?.error && (
-          <div style={{ marginTop: 8, color: 'var(--danger)', fontSize: '0.82rem' }}>❌ {scanResult.error}</div>
+          <div style={{ marginTop: 8, color: 'var(--danger)', fontSize: '0.82rem' }}><Icon name="xCircle" /> {scanResult.error}</div>
         )}
       </div>
 
@@ -180,7 +181,7 @@ export function AttendeesTab({ myEvents, organizerOrders, onCheckin, onCheckinBy
                       }}
                       style={{ padding: '5px 8px', borderRadius: 8, border: '1px solid rgba(239,68,68,.3)', background: 'rgba(239,68,68,.08)', color: 'var(--danger)', cursor: 'pointer', fontSize: '0.75rem' }}
                     >
-                      ↩
+                      <Icon name="undo" />
                     </button>
                   )}
                   {isRefunded && <span style={{ fontSize: '0.75rem', color: 'var(--danger)', padding: '5px 10px' }}>Remboursé</span>}

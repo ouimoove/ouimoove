@@ -7,16 +7,18 @@ import { MyEventsTab } from './organizer/MyEventsTab.jsx'
 import { AttendeesTab } from './organizer/AttendeesTab.jsx'
 import { InvitationsTab } from './organizer/InvitationsTab.jsx'
 import { AdminTab } from './organizer/AdminTab.jsx'
+import { Icon } from '../Icon.jsx'
+import styles from './OrganizerModal.module.css'
 
 const BASE_TABS = [
   { id: 'overview',     label: "Vue d'ensemble" },
-  { id: 'analytics',   label: '📈 Analytique' },
+  { id: 'analytics',   label: 'Analytique' },
   { id: 'events',      label: 'Mes Événements' },
   { id: 'create',      label: 'Créer' },
   { id: 'attendees',   label: 'Participants' },
-  { id: 'invitations', label: '🔒 Invitations' },
+  { id: 'invitations', label: 'Invitations' },
 ]
-const ADMIN_TAB = { id: 'admin', label: '🔑 Admin' }
+const ADMIN_TAB = { id: 'admin', label: 'Admin' }
 
 // ── Main Modal ────────────────────────────────────────────────
 // Each tab above owns its own state/data-loading and lives in its own file
@@ -54,22 +56,22 @@ export function OrganizerModal({
   return (
     <Modal open={open} onClose={onClose} size="lg">
       <ModalHeader
-        title="📊 Espace Organisateur"
+        title="Espace Organisateur"
         subtitle={`Bonjour, ${user.name.split(' ')[0]} !`}
       />
       <ModalBody>
-        {/* Tab bar */}
-        <div style={{ display: 'flex', gap: 4, background: 'var(--bg3)', borderRadius: 12, padding: 4, marginBottom: 22, flexWrap: 'wrap' }}>
+        <div className={styles.root}>
+        <div className={styles.tabBar} role="tablist">
           {tabs.map(t => (
             <button
               key={t.id}
+              role="tab"
+              aria-selected={tab === t.id}
               onClick={() => { setTab(t.id); if (t.id !== 'events') setEditingEvent(null) }}
-              style={{ flex: 1, minWidth: 70, padding: '8px 10px', borderRadius: 8, border: 'none', background: tab === t.id ? 'var(--bg2)' : 'transparent', color: tab === t.id ? 'var(--text)' : 'var(--muted)', cursor: 'pointer', fontSize: '0.78rem', transition: 'all .2s', boxShadow: tab === t.id ? '0 1px 5px rgba(36,18,46,.12)' : 'none', whiteSpace: 'nowrap' }}
+              className={[styles.tab, tab === t.id ? styles.tabActive : ''].join(' ')}
             >
               {t.label}
-              {t.id === 'admin' && applications?.length > 0 && (
-                <span style={{ marginLeft: 5, background: 'var(--orange)', color: '#fff', borderRadius: 99, padding: '0 6px', fontSize: '0.7rem', fontWeight: 700 }}>{applications.length}</span>
-              )}
+              {t.id === 'admin' && applications?.length > 0 && <span className={styles.badge}>{applications.length}</span>}
             </button>
           ))}
         </div>
@@ -84,19 +86,19 @@ export function OrganizerModal({
 
         {tab === 'events' && editingEvent && (
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
-              <button onClick={() => setEditingEvent(null)} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', fontSize: '0.8rem' }}>← Retour</button>
-              <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Modifier : {editingEvent.title}</span>
+            <div className={styles.editHead}>
+              <button className={styles.back} onClick={() => setEditingEvent(null)}><Icon name="arrow" style={{ transform: 'scaleX(-1)' }} /> Retour</button>
+              <span className={styles.editTitle}>Modifier : {editingEvent.title}</span>
             </div>
             <EventForm
               initial={editingEvent}
               onUploadImage={onUploadImage}
               onRequestCity={onRequestCity}
               cities={cities}
-              submitLabel="💾 Sauvegarder les modifications"
+              submitLabel="Sauvegarder les modifications"
               onSubmit={async (data) => {
                 const ok = await onUpdate(editingEvent.id, data)
-                if (ok) { setEditingEvent(null); toast?.('Événement mis à jour ✓', 'success') }
+                if (ok) { setEditingEvent(null); toast?.('Événement mis à jour', 'success') }
                 else toast?.("Impossible de mettre à jour l'événement", 'error')
               }}
               onCancel={() => setEditingEvent(null)}
@@ -110,10 +112,10 @@ export function OrganizerModal({
             onUploadImage={onUploadImage}
             onRequestCity={onRequestCity}
             cities={cities}
-            submitLabel="🚀 Publier l'événement"
+            submitLabel="Publier l'événement"
             onSubmit={async (data) => {
               const created = await onCreate(data)
-              if (created) toast?.('Événement publié ! 🎉', 'success')
+              if (created) toast?.('Événement publié !', 'success')
               else toast?.("Impossible de publier l'événement", 'error')
             }}
             toast={toast}
@@ -169,6 +171,7 @@ export function OrganizerModal({
             onFinalizeRefund={onFinalizeRefund}
           />
         )}
+              </div>
       </ModalBody>
     </Modal>
   )

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import styles from './Modal.module.css'
+import { Icon } from './Icon.jsx'
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
@@ -47,7 +48,7 @@ export function Modal({ open, onClose, children, size = 'md' }) {
       aria-hidden={!open}
     >
       <div ref={dialogRef} className={[styles.modal, styles[size]].join(' ')} role="dialog" aria-modal="true">
-        <button className={styles.close} onClick={onClose} aria-label="Fermer">✕</button>
+        <button className={styles.close} onClick={onClose} aria-label="Fermer"><Icon name="x" size="1.15rem" /></button>
         {children}
       </div>
     </div>

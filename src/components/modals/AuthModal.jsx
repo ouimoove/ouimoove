@@ -3,6 +3,7 @@ import { Modal, ModalHeader, ModalBody } from '../Modal.jsx'
 import { TermsBody } from './InfoModals.jsx'
 import { clickable } from '../../utils/helpers.js'
 import styles from './AuthModal.module.css'
+import { Icon } from '../Icon.jsx'
 
 const GoogleIcon = () => (
   <svg width="18" height="18" viewBox="0 0 48 48">
@@ -205,12 +206,12 @@ function SignupForm({ onSignup, onGoogle, onSwitch }) {
             type="button"
             className={`${styles.accountTypeBtn} ${!isBusiness ? styles.accountTypeActive : ''}`}
             onClick={() => setAccountType('personal')}
-          >👤 Particulier</button>
+          ><Icon name="user" /> Particulier</button>
           <button
             type="button"
             className={`${styles.accountTypeBtn} ${isBusiness ? styles.accountTypeActive : ''}`}
             onClick={() => setAccountType('business')}
-          >🏢 Entreprise / Organisateur</button>
+          ><Icon name="building" /> Entreprise / Organisateur</button>
         </div>
       </div>
 

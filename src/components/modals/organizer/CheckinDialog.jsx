@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Icon } from '../../Icon.jsx'
 
 // Bottom-sheet confirm dialog used by AttendeesTab after a scan/lookup.
 export function CheckinDialog({ order, eventId, onConfirm, onClose }) {
@@ -32,12 +33,12 @@ export function CheckinDialog({ order, eventId, onConfirm, onClose }) {
           <div style={{ textAlign: 'center', padding: '16px 0' }}>
             {done.error ? (
               <>
-                <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>❌</div>
+                <div style={{ fontSize: '2.5rem', marginBottom: 12 }}><Icon name="xCircle" /></div>
                 <div style={{ color: 'var(--danger)', fontWeight: 700 }}>{done.error}</div>
               </>
             ) : (
               <>
-                <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>✅</div>
+                <div style={{ fontSize: '2.5rem', marginBottom: 12 }}><Icon name="checkCircle" /></div>
                 <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--success)', marginBottom: 6 }}>
                   {done.validated} billet{done.validated > 1 ? 's' : ''} validé{done.validated > 1 ? 's' : ''} !
                 </div>
@@ -52,7 +53,7 @@ export function CheckinDialog({ order, eventId, onConfirm, onClose }) {
           </div>
         ) : remaining <= 0 ? (
           <div style={{ textAlign: 'center', padding: '16px 0' }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>⚠️</div>
+            <div style={{ fontSize: '2.5rem', marginBottom: 12 }}><Icon name="alert" /></div>
             <div style={{ fontWeight: 700, color: 'var(--orange)', marginBottom: 6 }}>Billet déjà entièrement utilisé</div>
             <div style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>{order.userName} · {item?.qty}/{item?.qty} billets validés</div>
             <button onClick={onClose} style={{ marginTop: 20, padding: '10px 32px', borderRadius: 12, border: 'none', background: 'var(--bg3)', color: 'var(--text)', cursor: 'pointer', fontWeight: 600 }}>Fermer</button>

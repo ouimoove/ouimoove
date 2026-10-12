@@ -1,25 +1,16 @@
 .summary {
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 14px 16px;
-  margin-bottom: 20px;
+  background: var(--cream); border: 0; border-radius: 22px; padding: 16px 20px; margin-bottom: 20px;
 }
 .summaryRow {
-  display: flex;
-  justify-content: space-between;
-  padding: 6px 0;
-  font-size: 0.88rem;
-  border-bottom: 1px solid var(--border);
-  gap: 12px;
+  display: flex; justify-content: space-between; padding: 7px 0; font-size: 0.92rem; border-bottom: 1px dashed #e4d3df; gap: 12px;
 }
 .summaryRow:last-child { border: none; }
-.total { font-weight: 700; color: var(--orange); padding-top: 10px; }
+.total {
+  font-family: var(--font-display); font-weight: 800; font-size: 1.25rem; color: var(--orange); padding-top: 12px;
+}
 
 .sectionLabel {
-  font-size: 0.82rem;
-  color: var(--muted);
-  margin-bottom: 10px;
+  font-size: 0.82rem; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px;
 }
 
 .methods {
@@ -28,67 +19,46 @@
   margin-bottom: 18px;
 }
 .method {
-  flex: 1;
-  padding: 12px 8px;
-  border-radius: 12px;
-  border: 2px solid var(--border);
-  background: var(--bg3);
-  cursor: pointer;
-  text-align: center;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--muted);
-  transition: all .2s;
-  font-family: var(--font-body);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
+  flex: 1; padding: 16px 8px; border-radius: 22px; border: 2px solid var(--line); background: #fff; cursor: pointer;
+  text-align: center; font-size: 0.82rem; font-weight: 700; color: var(--muted);
+  transition: all .25s var(--ease-out); font-family: var(--font-body);
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
 }
-.method:hover { border-color: var(--purple); background: rgba(139,34,118,.08); color: var(--text); }
+.method:hover {
+  border-color: var(--purple); background: var(--lilac); color: var(--plum); transform: translateY(-3px);
+}
 .selected {
-  border-color: var(--purple);
-  background: rgba(139,34,118,.12);
-  color: var(--purple3);
-  box-shadow: 0 0 0 3px rgba(139,34,118,.15);
+  border-color: var(--purple); background: var(--lilac); color: var(--purple); box-shadow: 0 0 0 4px rgba(139,34,118,.14), 0 12px 26px rgba(139,34,118,.16);
 }
 .methodIcon { display: flex; align-items: center; justify-content: center; }
 
 .fields { margin-bottom: 8px; }
 
 .group { margin-bottom: 14px; }
-.label { display: block; font-size: 0.82rem; color: var(--muted); margin-bottom: 6px; }
-.input {
-  width: 100%;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 10px 14px;
-  color: var(--text);
-  font-family: var(--font-body);
-  font-size: 0.9rem;
-  outline: none;
-  transition: border-color .2s;
+.label {
+  display: block; font-size: 0.82rem; font-weight: 600; color: var(--plum); margin-bottom: 7px;
 }
-.input:focus { border-color: var(--purple); }
+.input {
+  width: 100%; background: #fff; border: 2px solid #e4d3df; border-radius: 16px;
+  padding: 12px 16px; color: var(--text); font-family: var(--font-body); font-size: 0.95rem;
+  outline: none; transition: border-color .2s, box-shadow .2s;
+}
+.input:focus {
+  border-color: var(--purple); box-shadow: 0 0 0 4px rgba(139,34,118,.12);
+}
 .input::placeholder { color: var(--muted); }
 
 .row { display: flex; gap: 12px; }
 .row .group { flex: 1; }
 
 .confirmBtn {
-  width: 100%;
-  background: linear-gradient(135deg, var(--purple), var(--purple2));
-  color: #fff;
-  border: none;
-  border-radius: 12px;
-  padding: 13px;
-  font-family: var(--font-body);
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all .2s;
-  box-shadow: 0 4px 20px rgba(139,34,118,.3);
-  margin-top: 6px;
+  width: 100%; background: var(--orange); color: var(--plum); border: none; border-radius: var(--pill);
+  padding: 15px; font-family: var(--font-body); font-size: 1rem; font-weight: 700; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+  transition: transform .2s var(--ease-out), box-shadow .2s;
+  box-shadow: 0 10px 26px rgba(244,154,14,.34);
+  margin-top: 8px;
 }
-.confirmBtn:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(139,34,118,.4); }
+.confirmBtn:hover {
+  transform: translateY(-3px); box-shadow: 0 16px 34px rgba(244,154,14,.44);
+}

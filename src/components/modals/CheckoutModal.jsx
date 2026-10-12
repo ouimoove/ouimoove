@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Modal, ModalHeader, ModalBody } from '../Modal.jsx'
 import styles from './CheckoutModal.module.css'
+import { Icon } from '../Icon.jsx'
 
 const TmoneyLogo = () => (
   <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -93,7 +94,7 @@ export function CheckoutModal({ open, cart, cartTotal, onClose, onConfirm }) {
 
   return (
     <Modal open={open} onClose={onClose}>
-      <ModalHeader title="💳 Paiement" subtitle="Paiement sécurisé" />
+      <ModalHeader title="Paiement" subtitle="Paiement sécurisé" />
       <ModalBody>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16 }}>
           <img src="/sevigo-logo.png" alt="SèviGo" style={{ height: 14, width: 'auto' }} />
@@ -109,7 +110,7 @@ export function CheckoutModal({ open, cart, cartTotal, onClose, onConfirm }) {
           ))}
           {promoApplied && (
             <div className={styles.summaryRow} style={{ color: 'var(--success)', fontSize: '0.82rem' }}>
-              <span>🎟️ Code promo ({promoApplied.label})</span>
+              <span><Icon name="ticket" /> Code promo ({promoApplied.label})</span>
               <span>−{discountAmount.toLocaleString('fr-FR')} FCFA</span>
             </div>
           )}
@@ -123,7 +124,7 @@ export function CheckoutModal({ open, cart, cartTotal, onClose, onConfirm }) {
         {finalTotal === 0 ? (
           <>
             <div style={{ textAlign: 'center', padding: '18px 0', color: 'var(--success)', fontSize: '0.92rem', fontWeight: 600 }}>
-              🎉 Billet(s) gratuit(s) — aucun paiement requis
+              <Icon name="sparkles" /> Billet(s) gratuit(s) — aucun paiement requis
             </div>
             <button className={styles.confirmBtn} onClick={submitFree} disabled={loading}>
               {loading ? 'Traitement en cours…' : 'Confirmer gratuitement'}
@@ -178,7 +179,7 @@ export function CheckoutModal({ open, cart, cartTotal, onClose, onConfirm }) {
             {/* Card — entered on the payment provider's own secure page, never in this form */}
             {method === 'card' && (
               <p style={{ color: 'var(--muted)', fontSize: '0.82rem', lineHeight: 1.5, marginBottom: 14 }}>
-                🔒 Vous serez redirigé vers la page de paiement sécurisée pour saisir les informations de votre carte.
+                <Icon name="lock" /> Vous serez redirigé vers la page de paiement sécurisée pour saisir les informations de votre carte.
                 Elles ne transitent jamais par OuiMoove.
               </p>
             )}

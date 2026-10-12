@@ -1,14 +1,15 @@
 import { Modal, ModalHeader, ModalBody } from '../Modal.jsx'
 import styles from './CartModal.module.css'
+import { Icon } from '../Icon.jsx'
 
 export function CartModal({ open, cart, cartTotal, onClose, onRemove, onCheckout }) {
   return (
     <Modal open={open} onClose={onClose}>
-      <ModalHeader title="🛒 Panier" />
+      <ModalHeader title="Panier" />
       <ModalBody>
         {cart.length === 0 ? (
           <div className={styles.empty}>
-            <div className={styles.emptyIcon}>🛒</div>
+            <div className={styles.emptyIcon}><Icon name="cart" /></div>
             <p>Votre panier est vide</p>
           </div>
         ) : (
@@ -22,7 +23,7 @@ export function CartModal({ open, cart, cartTotal, onClose, onRemove, onCheckout
                   </div>
                   <div className={styles.right}>
                     <span className={styles.price}>{(item.price * item.qty).toLocaleString('fr-FR')} FCFA</span>
-                    <button className={styles.removeBtn} onClick={() => onRemove(item.id)}>✕</button>
+                    <button className={styles.removeBtn} onClick={() => onRemove(item.id)} aria-label="Retirer du panier"><Icon name="x" size="0.95rem" /></button>
                   </div>
                 </div>
               ))}

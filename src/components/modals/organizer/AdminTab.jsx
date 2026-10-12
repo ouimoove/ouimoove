@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { formatDate } from '../../../utils/helpers.js'
+import { Icon } from '../../Icon.jsx'
 
 export function AdminTab({ applications, onPromote, onReject, onRefresh, onLoadVerifRequests, onApproveVerif, onDenyVerif, onLoadCityRequests, onApproveCityRequest, onDenyCityRequest, onLoadPendingEvents, onApproveEvent, onRejectEvent, isSuperAdmin, currentUserId, onLoadAdmins, onPromoteAdmin, onDemoteAdmin, onLoadRefundRequests, onApproveRefund, onRejectRefund, onFinalizeRefund }) {
   const [busy, setBusy] = useState({})
@@ -104,7 +105,7 @@ export function AdminTab({ applications, onPromote, onReject, onRefresh, onLoadV
         <div style={{ marginBottom: 24, paddingBottom: 20, borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <p style={{ color: 'var(--muted)', fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
-              👑 Administrateurs ({admins.length})
+              <Icon name="crown" /> Administrateurs ({admins.length})
             </p>
             <button onClick={refreshAdmins} style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, padding: '5px 12px', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.78rem' }}>↻</button>
           </div>
@@ -135,7 +136,7 @@ export function AdminTab({ applications, onPromote, onReject, onRefresh, onLoadV
                 <div key={a.id} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
                   <div>
                     <div style={{ fontWeight: 700, fontSize: '0.86rem', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      {a.role === 'super_admin' ? '👑' : '🔑'} {a.full_name || a.email}
+                      <Icon name={a.role === 'super_admin' ? 'crown' : 'key'} /> {a.full_name || a.email}
                       {a.id === currentUserId && <span style={{ color: 'var(--muted)', fontWeight: 400, fontSize: '0.72rem' }}>(vous)</span>}
                     </div>
                     <div style={{ color: 'var(--muted)', fontSize: '0.75rem', marginTop: 2 }}>
@@ -160,7 +161,7 @@ export function AdminTab({ applications, onPromote, onReject, onRefresh, onLoadV
       <div style={{ marginBottom: 24, paddingBottom: 20, borderBottom: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <p style={{ color: 'var(--muted)', fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
-            ↩ Demandes de remboursement ({refunds.length})
+            <Icon name="undo" /> Demandes de remboursement ({refunds.length})
           </p>
           <button onClick={refreshRefunds} style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, padding: '5px 12px', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.78rem' }}>↻</button>
         </div>
@@ -182,7 +183,7 @@ export function AdminTab({ applications, onPromote, onReject, onRefresh, onLoadV
                     {r.event_title} · payé par {r.payment_method || '—'} · {formatDate(r.created_at)}
                   </div>
                   {r.reason && <div style={{ color: 'var(--text)', fontSize: '0.78rem', marginTop: 6 }}>« {r.reason} »</div>}
-                  {r.payout_error && <div style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: 6 }}>⚠ {r.payout_error}</div>}
+                  {r.payout_error && <div style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: 6 }}><Icon name="alert" /> {r.payout_error}</div>}
 
                   {processing ? (
                     <div style={{ marginTop: 10 }}>
@@ -232,7 +233,7 @@ export function AdminTab({ applications, onPromote, onReject, onRefresh, onLoadV
       <div style={{ marginBottom: 24 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <p style={{ color: 'var(--muted)', fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
-            🕓 Événements en attente ({pendingEvents.length})
+            <Icon name="clock" /> Événements en attente ({pendingEvents.length})
           </p>
           <button onClick={refreshPendingEvents} style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, padding: '5px 12px', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.78rem' }}>↻</button>
         </div>
@@ -263,7 +264,7 @@ export function AdminTab({ applications, onPromote, onReject, onRefresh, onLoadV
                       disabled={eventBusy[e.id]}
                       onClick={() => handleRejectEvent(e.id)}
                       style={{ padding: '5px 10px', borderRadius: 8, border: '1px solid rgba(239,68,68,.4)', background: 'rgba(239,68,68,.1)', color: 'var(--danger)', cursor: 'pointer', fontSize: '0.75rem', opacity: eventBusy[e.id] ? 0.5 : 1 }}
-                    >🗑️ Supprimer</button>
+                    ><Icon name="trash" /> Supprimer</button>
                     <button
                       disabled={eventBusy[e.id]}
                       onClick={() => handleApproveEvent(e.id)}
@@ -281,7 +282,7 @@ export function AdminTab({ applications, onPromote, onReject, onRefresh, onLoadV
       <div style={{ marginBottom: 24 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <p style={{ color: 'var(--muted)', fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
-            🛡️ Demandes de vérification ({verifRequests.length})
+            <Icon name="shield" /> Demandes de vérification ({verifRequests.length})
           </p>
           <button onClick={refreshVerif} style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, padding: '5px 12px', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.78rem' }}>↻</button>
         </div>
@@ -312,7 +313,7 @@ export function AdminTab({ applications, onPromote, onReject, onRefresh, onLoadV
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>{r.profiles?.name} <span style={{ color: 'var(--muted)', fontWeight: 400, fontSize: '0.75rem' }}>#{String(r.profiles?.user_number || '').padStart(6,'0')}</span></div>
                     <div style={{ color: 'var(--muted)', fontSize: '0.75rem', marginTop: 2 }}>{r.profiles?.email}</div>
-                    <a href={r.id_card_url} target="_blank" rel="noreferrer" style={{ color: 'var(--purple3)', fontSize: '0.75rem', marginTop: 4, display: 'inline-block' }}>📄 Voir le document →</a>
+                    <a href={r.id_card_url} target="_blank" rel="noreferrer" style={{ color: 'var(--purple3)', fontSize: '0.75rem', marginTop: 4, display: 'inline-block' }}><Icon name="file" /> Voir le document →</a>
                   </div>
                   <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                     <button
@@ -337,7 +338,7 @@ export function AdminTab({ applications, onPromote, onReject, onRefresh, onLoadV
       <div style={{ marginBottom: 24, paddingTop: 20, borderTop: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <p style={{ color: 'var(--muted)', fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
-            🌍 Demandes de ville ({cityRequests.length})
+            <Icon name="globe" /> Demandes de ville ({cityRequests.length})
           </p>
           <button onClick={() => onLoadCityRequests?.().then(setCityRequests)} style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, padding: '5px 12px', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.78rem' }}>↻</button>
         </div>
@@ -348,7 +349,7 @@ export function AdminTab({ applications, onPromote, onReject, onRefresh, onLoadV
             {cityRequests.map(r => (
               <div key={r.id} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>🌍 {r.name}</div>
+                  <div style={{ fontWeight: 700, fontSize: '0.9rem' }}><Icon name="globe" /> {r.name}</div>
                   <div style={{ color: 'var(--muted)', fontSize: '0.75rem', marginTop: 2 }}>
                     Demandé par {r.profiles?.name || r.profiles?.email || 'Inconnu'}
                   </div>
@@ -385,7 +386,7 @@ export function AdminTab({ applications, onPromote, onReject, onRefresh, onLoadV
       <div style={{ paddingTop: 20, borderTop: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <p style={{ color: 'var(--muted)', fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
-            🎤 Demandes organisateur ({applications?.length || 0})
+            <Icon name="mic" /> Demandes organisateur ({applications?.length || 0})
           </p>
           <button onClick={onRefresh} style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, padding: '5px 12px', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.78rem' }}>↻ Actualiser</button>
         </div>

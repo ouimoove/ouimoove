@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ORGANIZER_FEE_PCT, organizerNet } from '../../../utils/helpers.js'
 import { CATEGORIES, CITIES } from '../../../data/events.js'
 import { inputStyle, labelStyle, groupStyle } from './shared.jsx'
+import { Icon } from '../../Icon.jsx'
 
 const OTHER_CITY = '__other__'
 
@@ -20,7 +21,7 @@ export function EventForm({ initial, submitLabel, onSubmit, onCancel, onUploadIm
   const [cityReqSent, setCityReqSent] = useState(false)
   const city = citySelect === OTHER_CITY ? customCity.trim() : citySelect
   const [desc,        setDesc]        = useState(initial?.desc        || '')
-  const [emoji,       setEmoji]       = useState(initial?.emoji       || '')
+  const [emoji]                          = useState(initial?.emoji       || '')
   const [imageUrl,    setImageUrl]    = useState(initial?.imageUrl    || '')
   const [isPrivate,   setIsPrivate]   = useState(initial?.isPrivate   || false)
   const [ticketTypes, setTicketTypes] = useState(
@@ -53,10 +54,6 @@ export function EventForm({ initial, submitLabel, onSubmit, onCancel, onUploadIm
         <div style={{ ...groupStyle, flex: 2 }}>
           <label style={labelStyle}>Titre *</label>
           <input style={inputStyle} placeholder="Ex: Festival de Jazz de Lomé" value={title} onChange={e => setTitle(e.target.value)} maxLength={150} />
-        </div>
-        <div style={{ ...groupStyle, flex: 1 }}>
-          <label style={labelStyle}>Emoji</label>
-          <input style={inputStyle} placeholder="🎵" maxLength={2} value={emoji} onChange={e => setEmoji(e.target.value)} />
         </div>
       </div>
 
@@ -130,7 +127,7 @@ export function EventForm({ initial, submitLabel, onSubmit, onCancel, onUploadIm
           <input style={{ ...inputStyle, flex: 1 }} type="url" placeholder="https://example.com/image.jpg" value={imageUrl} onChange={e => setImageUrl(e.target.value)} />
           {onUploadImage && (
             <label style={{ flexShrink: 0, background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 10, padding: '8px 14px', cursor: 'pointer', fontSize: '0.82rem', color: 'var(--muted)', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6 }}>
-              📁 Fichier
+              <Icon name="folder" /> Fichier
               <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
                 const file = e.target.files?.[0]
                 if (!file) return
@@ -155,7 +152,7 @@ export function EventForm({ initial, submitLabel, onSubmit, onCancel, onUploadIm
         style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: isPrivate ? 'rgba(139,34,118,.12)' : 'var(--bg3)', border: `1px solid ${isPrivate ? 'var(--purple)' : 'var(--border)'}`, borderRadius: 10, padding: '12px 14px', marginBottom: 14, cursor: 'pointer', transition: 'all .2s', userSelect: 'none' }}
       >
         <div>
-          <div style={{ fontWeight: 600, fontSize: '0.88rem', color: isPrivate ? 'var(--purple3)' : 'var(--text)' }}>🔒 Événement privé</div>
+          <div style={{ fontWeight: 600, fontSize: '0.88rem', color: isPrivate ? 'var(--purple3)' : 'var(--text)' }}><Icon name="lock" /> Événement privé</div>
           <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: 2 }}>
             {isPrivate ? 'Visible uniquement par les personnes invitées' : 'Visible par tous les utilisateurs'}
           </div>
@@ -182,7 +179,7 @@ export function EventForm({ initial, submitLabel, onSubmit, onCancel, onUploadIm
 
       {/* Commission notice — what the organizer actually receives per ticket */}
       <div style={{ background: 'rgba(244,154,14,.08)', border: '1px solid rgba(244,154,14,.35)', borderRadius: 10, padding: '10px 14px', marginBottom: 18, fontSize: '0.8rem', lineHeight: 1.5 }}>
-        <div style={{ fontWeight: 600, color: 'var(--text)' }}>💡 Commission OuiMoove : {ORGANIZER_FEE_PCT}% par billet vendu</div>
+        <div style={{ fontWeight: 600, color: 'var(--text)' }}><Icon name="idea" /> Commission OuiMoove : {ORGANIZER_FEE_PCT}% par billet vendu</div>
         <div style={{ color: 'var(--muted)' }}>Prélevée sur vos recettes (frais de paiement inclus). Les billets gratuits ne sont pas facturés.</div>
         {ticketTypes.some(t => Number(t.price) > 0) && (
           <div style={{ marginTop: 6, color: 'var(--text)' }}>

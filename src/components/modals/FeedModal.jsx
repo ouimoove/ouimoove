@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Modal, ModalHeader, ModalBody } from '../Modal.jsx'
+import { Icon } from '../Icon.jsx'
 
 const MAX_FILE_MB = 50
 
@@ -97,14 +98,14 @@ function PostForm({ events, onSubmit, onCancel, toast }) {
             width: '100%', padding: '20px 0', borderRadius: 10, border: '1.5px dashed var(--border)',
             background: 'var(--bg2)', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.85rem',
           }}>
-            📷 Choisir une photo ou une vidéo
+            <Icon name="camera" /> Choisir une photo ou une vidéo
           </button>
         )}
       </div>
 
       <div style={{ marginBottom: 14 }}>
         <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--muted)', marginBottom: 6 }}>Légende (optionnel)</label>
-        <input style={inputStyle} placeholder="L'ambiance est incroyable ici ! 🔥"
+        <input style={inputStyle} placeholder="L'ambiance est incroyable ici !"
           value={caption} onChange={e => setCaption(e.target.value)} maxLength={200} />
       </div>
 
@@ -136,7 +137,7 @@ function PostCard({ post, currentUserId, onDelete }) {
         {isOwn && (
           <button onClick={() => onDelete(post.id)} title="Supprimer" style={{
             background: 'transparent', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.95rem', padding: 4,
-          }}>🗑️</button>
+          }}><Icon name="trash" /></button>
         )}
       </div>
 
@@ -170,7 +171,7 @@ export function FeedModal({ open, posts, events, loading, currentUserId, onClose
 
   return (
     <Modal open={open} onClose={() => { setShowForm(false); onClose() }} size="lg">
-      <ModalHeader title="📸 Feed" subtitle="Les moments partagés par la communauté" />
+      <ModalHeader title="Feed" subtitle="Les moments partagés par la communauté" />
       <ModalBody>
         {!showForm && (
           <button onClick={() => setShowForm(true)} style={{
@@ -178,7 +179,7 @@ export function FeedModal({ open, posts, events, loading, currentUserId, onClose
             background: 'linear-gradient(135deg, var(--purple), var(--purple2))', color: '#fff',
             fontWeight: 700, fontSize: '0.92rem', cursor: 'pointer',
           }}>
-            ✨ Partager un moment
+            <Icon name="sparkles" /> Partager un moment
           </button>
         )}
 
@@ -195,7 +196,7 @@ export function FeedModal({ open, posts, events, loading, currentUserId, onClose
           <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--muted)' }}>Chargement…</div>
         ) : posts.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '48px 0' }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>📸</div>
+            <div style={{ fontSize: '2.5rem', marginBottom: 12 }}><Icon name="camera" /></div>
             <p style={{ color: 'var(--muted)', fontSize: '0.9rem', marginBottom: 4 }}>Aucun moment partagé pour l'instant.</p>
             <p style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>Soyez le premier à montrer l'ambiance d'un événement !</p>
           </div>

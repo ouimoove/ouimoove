@@ -1,6 +1,7 @@
 import styles from './Footer.module.css'
+import { Icon } from './Icon.jsx'
 
-export function Footer({ onHowItWorks, onFaq, onContact, onTerms, onPrivacy, onMarket, onCreateEvent }) {
+export function Footer({ onHowItWorks, onFaq, onContact, onTerms, onPrivacy, onMarket, onCreateEvent, onWeddings }) {
   const year = new Date().getFullYear()
   return (
     <footer className={styles.footer}>
@@ -19,6 +20,7 @@ export function Footer({ onHowItWorks, onFaq, onContact, onTerms, onPrivacy, onM
           <h4 className={styles.colTitle}>Découvrir</h4>
           <button className={styles.link} onClick={onMarket}>Marché de revente</button>
           <button className={styles.link} onClick={onCreateEvent}>Organiser un événement</button>
+          <button className={styles.link} onClick={onWeddings}>Ouimoove Weddings <Icon name="ring" /></button>
           <button className={styles.link} onClick={onHowItWorks}>Comment ça marche</button>
         </div>
 
@@ -38,7 +40,7 @@ export function Footer({ onHowItWorks, onFaq, onContact, onTerms, onPrivacy, onM
 
       <div className={styles.bottom}>
         <span>© {year} OuiMoove™. Tous droits réservés.</span>
-        <span className={styles.madeIn}>Fait avec ❤️ en Afrique de l’Ouest</span>
+        <span className={styles.madeIn}>Fait avec <Icon name="heart" /> en Afrique de l’Ouest</span>
         <span>
           Designed by{' '}
           <a className={styles.link} href="https://waa-woad.vercel.app/" target="_blank" rel="noopener noreferrer">

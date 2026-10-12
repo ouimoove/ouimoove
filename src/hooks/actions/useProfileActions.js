@@ -8,7 +8,7 @@ export function useProfileActions(store, toast, { close }) {
 
   const onSubscribePush = async () => {
     const ok = await store.subscribePush()
-    if (ok) toast('Notifications activées 🔔', 'success')
+    if (ok) toast('Notifications activées', 'success')
     else toast('Notifications non disponibles', 'error')
     return ok
   }

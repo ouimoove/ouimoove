@@ -1,201 +1,122 @@
-.empty {
-  text-align: center;
-  padding: 56px 0;
-  color: var(--muted);
+.empty { text-align: center; padding: 56px 0; color: var(--muted); }
+.emptyIcon {
+  width: 84px; height: 84px; margin: 0 auto 16px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--lilac); color: var(--purple); font-size: 2.2rem;
 }
-.emptyIcon { font-size: 3.5rem; margin-bottom: 14px; }
-.emptySub  { font-size: 0.82rem; margin-top: 6px; opacity: .7; }
+.empty p { font-family: var(--font-display); font-weight: 800; font-size: 1.15rem; color: var(--plum); }
+.emptySub { font-family: var(--font-body) !important; font-weight: 400 !important; font-size: .9rem !important; color: var(--muted) !important; margin-top: 4px; }
 
-/* ── Ticket card ── */
+/* ── Ticket: a boarding-pass style card ── */
 .ticket {
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  margin-bottom: 20px;
-  overflow: hidden;
-  position: relative;
+  position: relative; overflow: hidden; margin-bottom: 24px;
+  background: var(--cream); border: 2px solid var(--line); border-radius: 30px;
+  box-shadow: var(--shadow-md);
+  transition: transform .3s var(--ease-out), box-shadow .3s;
 }
+.ticket:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+.ticketRefunded { opacity: .6; }
+.ticketRefunded:hover { transform: none; }
 
-/* ── Branded header ── */
+/* header band */
 .ticketHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 18px 10px;
-  background: linear-gradient(135deg, #3a1230 0%, #6a2456 55%, #8b2276 100%);
+  position: relative; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 16px 22px;
+  background:
+    radial-gradient(circle at 92% -30%, rgba(244,154,14,.55), transparent 55%),
+    linear-gradient(135deg, var(--plum), var(--deep) 55%, var(--purple));
 }
-
-.headerLeft {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.brandOui {
-  font-weight: 900;
-  font-size: 1.25rem;
-  color: #ffffff;
-  letter-spacing: -0.02em;
-}
-.brandMoove {
-  font-weight: 900;
-  font-size: 1.25rem;
-  color: var(--orange);
-  letter-spacing: -0.02em;
-}
-
+.headerLeft { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.brandOui, .brandMoove { font-family: var(--font-display); font-weight: 800; font-size: 1.4rem; letter-spacing: -.5px; line-height: 1; }
+.brandOui { color: #fff; }
+.brandMoove { color: var(--orange); margin-left: -12px; }
 .headerTag {
-  font-size: 0.65rem;
-  font-weight: 600;
-  color: rgba(255,255,255,0.4);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  border-left: 1px solid rgba(255,255,255,0.15);
-  padding-left: 10px;
+  font-size: .68rem; font-weight: 700; color: rgba(255,255,255,.6); text-transform: uppercase; letter-spacing: 1.4px;
+  border-left: 1px solid rgba(255,255,255,.25); padding-left: 12px; white-space: nowrap;
 }
-
 .statusBadge {
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  white-space: nowrap;
-  flex-shrink: 0;
+  display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; white-space: nowrap;
+  padding: 6px 14px; border-radius: var(--pill); font-size: .76rem; font-weight: 700;
 }
+.badgeOk { background: #fff; color: #178a45; }
+.badgeRefunded { background: rgba(255,255,255,.18); color: #fff; }
 
-/* ── Event name ── */
+/* event + ticket types */
 .eventName {
-  padding: 14px 18px 6px;
-  font-size: 1.05rem;
-  font-weight: 700;
-  line-height: 1.3;
-  color: var(--text);
+  padding: 22px 24px 8px; font-family: var(--font-display); font-weight: 800;
+  font-size: 1.6rem; line-height: 1.12; color: var(--plum);
 }
-
-/* ── Tag row ── */
-.tagRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 0 18px 14px;
-}
-
+.tagRow { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 24px 22px; }
 .tag {
-  background: rgba(139,34,118,0.15);
-  border: 1px solid rgba(139,34,118,0.3);
-  color: var(--purple3);
-  border-radius: 20px;
-  padding: 3px 10px;
-  font-size: 0.75rem;
-  font-weight: 600;
+  background: var(--lilac); color: var(--purple); border-radius: var(--pill);
+  padding: 5px 14px; font-size: .8rem; font-weight: 700;
 }
 
-/* ── Tear line ── */
-.tearLine {
-  display: flex;
-  align-items: center;
-  position: relative;
-  margin: 0;
+/* perforation with side notches that "cut" the card */
+.tearLine { position: relative; display: flex; align-items: center; }
+.notchLeft, .notchRight {
+  flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; z-index: 2;
+  background: #fff; border: 2px solid var(--line);
 }
+.notchLeft { margin-left: -15px; border-left-color: #fff; }
+.notchRight { margin-right: -15px; border-right-color: #fff; }
+.dashes { flex: 1; border-top: 2px dashed #e4d3df; }
+.scissors { color: #c5aebd; padding: 0 10px; display: inline-flex; font-size: 1rem; }
 
-.notchLeft,
-.notchRight {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--bg2);
-  flex-shrink: 0;
-  margin: 0 -7px;
-  border: 1px solid var(--border);
-  z-index: 2;
-}
-
-.dashes {
-  flex: 1;
-  border-top: 1.5px dashed rgba(36,18,46,0.18);
-}
-
-.scissors {
-  font-size: 0.85rem;
-  color: rgba(36,18,46,0.3);
-  padding: 0 8px;
-  line-height: 1;
-}
-
-/* ── QR section ── */
-.qrSection {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  padding: 18px 18px 14px;
-  background: #ffffff;
-}
-
+/* QR */
+.qrSection { display: flex; align-items: center; gap: 24px; padding: 22px 26px 18px; background: #fff; }
 .qrWrap {
-  flex-shrink: 0;
-  border-radius: 12px;
-  overflow: hidden;
-  line-height: 0;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+  flex-shrink: 0; line-height: 0; padding: 12px; background: #fff; border-radius: 24px;
+  border: 2px solid var(--lilac); box-shadow: 0 10px 28px rgba(139,34,118,.12);
 }
+.qrImg { display: block; border-radius: 12px; }
+.qrMeta { flex: 1; min-width: 0; }
+.qrLabel { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.4px; color: var(--orange); margin-bottom: 8px; }
+.qrRef { font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace; font-weight: 700; font-size: 1.25rem; letter-spacing: .12em; color: var(--plum); margin-bottom: 6px; }
+.qrDate { font-size: .88rem; color: var(--muted); margin-bottom: 12px; }
+.qrTotal { font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; color: var(--purple); }
 
-.qrWrap canvas {
-  display: block;
-  border-radius: 10px;
-}
+/* line items and resale */
+.itemsList { padding: 14px 26px 22px; background: #fff; border-top: 1px dashed #e4d3df; }
+.itemRow { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 7px 0; font-size: .92rem; color: #5c4d59; }
+.struck { text-decoration: line-through; color: var(--muted); }
+.soldTag { color: var(--danger); font-size: .74rem; font-weight: 700; margin-left: 8px; }
+.validated { display: inline-flex; align-items: center; gap: 6px; font-size: .8rem; font-weight: 600; color: #178a45; background: #e8f6ee; border-radius: var(--pill); padding: 4px 12px; margin: 2px 0 6px; }
 
-.qrMeta {
-  flex: 1;
-  min-width: 0;
+.resaleWrap { margin: 4px 0 8px; }
+.btnResale, .btnGhostSm, .btnDangerSm, .btnSell {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; white-space: nowrap;
+  font-family: var(--font-body); font-weight: 700; border-radius: var(--pill);
+  transition: background .2s, color .2s, border-color .2s, transform .2s var(--ease-out);
 }
+.btnResale { background: #fff; border: 1.5px solid #e4d3df; color: var(--purple); font-size: .8rem; padding: 7px 16px; }
+.btnResale:hover { background: var(--lilac); border-color: var(--purple); transform: translateY(-2px); }
+.btnGhostSm { background: #fff; border: 1.5px solid #e4d3df; color: var(--muted); width: 36px; height: 36px; padding: 0; }
+.btnGhostSm:hover { color: var(--purple); border-color: var(--purple); }
+.btnDangerSm { background: #fff; border: 1.5px solid rgba(226,61,61,.4); color: var(--danger); font-size: .76rem; padding: 6px 14px; }
+.btnDangerSm:hover { background: var(--danger); color: #fff; }
+.btnSell { background: var(--orange); border: 0; color: var(--plum); font-size: .84rem; padding: 9px 20px; box-shadow: 0 6px 16px rgba(244,154,14,.32); }
+.btnSell:hover:not(:disabled) { transform: translateY(-2px); }
+.btnSell:disabled { opacity: .6; cursor: default; }
+.resaleForm { display: flex; gap: 8px; align-items: center; }
+.resaleInput {
+  flex: 1; min-width: 0; background: #fff; border: 2px solid #e4d3df; border-radius: var(--pill);
+  padding: 9px 16px; color: var(--text); font-family: var(--font-body); font-size: .86rem; outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+.resaleInput:focus { border-color: var(--purple); box-shadow: 0 0 0 4px rgba(139,34,118,.12); }
+.listingBox {
+  display: flex; align-items: center; gap: 10px; background: #fff7e8; border: 1.5px solid rgba(244,154,14,.4);
+  border-radius: 18px; padding: 8px 14px;
+}
+.listingText { flex: 1; font-size: .84rem; font-weight: 600; color: #b36b00; }
 
-.qrLabel {
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: #9ca3af;
-  margin-bottom: 6px;
+@media (max-width: 520px) {
+  .ticketHeader { padding: 14px 16px; }
+  .headerTag { display: none; }
+  .eventName { padding: 18px 18px 6px; font-size: 1.35rem; }
+  .tagRow { padding: 0 18px 18px; }
+  .qrSection { flex-direction: column; align-items: center; text-align: center; padding: 20px 16px 14px; gap: 16px; }
+  .itemsList { padding: 12px 18px 18px; }
+  .resaleForm { flex-wrap: wrap; }
 }
-
-.qrRef {
-  font-size: 1rem;
-  font-weight: 900;
-  font-family: monospace;
-  letter-spacing: 0.1em;
-  color: #1a0a2e;
-  margin-bottom: 4px;
-}
-
-.qrDate {
-  font-size: 0.78rem;
-  color: #6b7280;
-  margin-bottom: 10px;
-}
-
-.qrTotal {
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: var(--orange);
-}
-
-/* ── Items list ── */
-.itemsList {
-  padding: 14px 18px 16px;
-  border-top: 1px solid var(--border);
-}
-
-.itemRow {
-  display: flex;
-  justify-content: space-between;
-  padding: 5px 0;
-  font-size: 0.83rem;
-  color: var(--muted);
-  gap: 12px;
-}
-
-/* ── Mobile ── */
-@media (max-width: 480px) {
-  .qrSection { flex-direction: column; align-items: flex-start; }
-  .qrWrap canvas { width: 140px !important; height: 140px !important; }
-}
+@media (prefers-reduced-motion: reduce) { .ticket, .btnResale, .btnSell { transition: none; } .ticket:hover { transform: none; } }

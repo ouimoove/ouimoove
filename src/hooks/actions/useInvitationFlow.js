@@ -25,7 +25,7 @@ export function useInvitationFlow(store, toast, { open, close }) {
     if (result?.ok) {
       toast(
         decision === 'accepted'
-          ? '🎉 Présence confirmée ! Vous pouvez maintenant voir et réserver cet événement.'
+          ? 'Présence confirmée ! Vous pouvez maintenant voir et réserver cet événement.'
           : 'Réponse envoyée. Merci de nous avoir prévenus.',
         'success'
       )

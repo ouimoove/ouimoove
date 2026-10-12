@@ -14,7 +14,7 @@ export function useCheckoutFlow(store, toast, { open, close }) {
   // realtime "just paid" event doesn't celebrate twice for the same order.
   const celebratedOrders = useRef(new Set())
 
-  const celebrateOrder = (orderId, message = '🎉 Paiement confirmé ! Vos billets sont disponibles.') => {
+  const celebrateOrder = (orderId, message = 'Paiement confirmé ! Vos billets sont disponibles.') => {
     if (!orderId || celebratedOrders.current.has(orderId)) return
     celebratedOrders.current.add(orderId)
     // In the native app the PayDunya checkout is an in-app browser sheet on
@@ -60,7 +60,7 @@ export function useCheckoutFlow(store, toast, { open, close }) {
     if (!result) { toast('Achat impossible. Réessayez.', 'error'); return result }
     if (result.error) { toast(result.error, 'error'); return result }
     if (result.redirect) { await openCheckout(result.redirect); return result }
-    celebrateOrder(result.orderId, '🎉 Billet acheté ! Disponible dans Mes Billets.')
+    celebrateOrder(result.orderId, 'Billet acheté ! Disponible dans Mes Billets.')
     return result
   }
 

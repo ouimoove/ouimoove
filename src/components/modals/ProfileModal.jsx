@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Modal, ModalHeader, ModalBody } from '../Modal.jsx'
 import styles from './ProfileModal.module.css'
+import { Icon } from '../Icon.jsx'
 
 export function ProfileModal({
   open, user, userNumber, isVerified, isOrganizer,
@@ -73,13 +74,13 @@ export function ProfileModal({
     else alert(result?.error || 'Erreur lors de l\'envoi.')
   }
 
-  const sectionStyle = { marginTop: 20, paddingTop: 18, borderTop: '1px solid var(--border)' }
-  const sectionTitle = { fontWeight: 700, fontSize: '0.88rem', marginBottom: 6 }
-  const sectionSub   = { color: 'var(--muted)', fontSize: '0.78rem', marginBottom: 10 }
+  const sectionStyle = { marginTop: 18, padding: '18px 20px', background: 'var(--cream)', borderRadius: 24 }
+  const sectionTitle = { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.08rem', color: 'var(--plum)', marginBottom: 6 }
+  const sectionSub   = { color: 'var(--muted)', fontSize: '0.86rem', lineHeight: 1.5, marginBottom: 12 }
 
   return (
     <Modal open={open} onClose={onClose}>
-      <ModalHeader title="👤 Mon Profil" />
+      <ModalHeader title="Mon Profil" />
       <ModalBody>
         {/* Avatar + user number + verified badge */}
         <div className={styles.avatarWrap}>
@@ -88,18 +89,18 @@ export function ProfileModal({
         </div>
 
         {/* User ID + verified badge */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
+        <div className={styles.metaRow}>
           {userNumber && (
-            <span style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, padding: '4px 12px', fontSize: '0.78rem', color: 'var(--muted)', fontFamily: 'monospace', letterSpacing: 1 }}>
+            <span className={styles.idChip}>
               #{String(userNumber).padStart(6, '0')}
             </span>
           )}
           {isVerified ? (
-            <span style={{ background: 'rgba(34,197,94,.15)', border: '1px solid rgba(34,197,94,.4)', borderRadius: 8, padding: '4px 12px', fontSize: '0.78rem', color: 'var(--success)', fontWeight: 700 }}>
-              ✓ Compte vérifié
+            <span className={styles.verifiedChip}>
+              <Icon name="check" /> Compte vérifié
             </span>
           ) : (
-            <span style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, padding: '4px 12px', fontSize: '0.78rem', color: 'var(--muted)' }}>
+            <span className={styles.unverifiedChip}>
               Non vérifié
             </span>
           )}
@@ -126,17 +127,17 @@ export function ProfileModal({
         {/* ── Verification section ── */}
         {!isVerified && (
           <div style={sectionStyle}>
-            <p style={sectionTitle}>🛡️ Obtenir le badge Vérifié</p>
+            <p style={sectionTitle}><Icon name="shield" /> Obtenir le badge Vérifié</p>
 
             {verifStatus === 'pending' && (
-              <div style={{ background: 'rgba(244,154,14,.1)', border: '1px solid rgba(244,154,14,.3)', borderRadius: 10, padding: '12px 14px' }}>
-                <p style={{ color: 'var(--orange)', fontSize: '0.85rem', fontWeight: 600, margin: 0 }}>⏳ Vérification en cours</p>
+              <div style={{ background: 'rgba(244,154,14,.1)', border: '1px solid rgba(244,154,14,.3)', borderRadius: 16, padding: '12px 14px' }}>
+                <p style={{ color: 'var(--orange)', fontSize: '0.85rem', fontWeight: 600, margin: 0 }}><Icon name="hourglass" /> Vérification en cours</p>
                 <p style={{ color: 'var(--muted)', fontSize: '0.78rem', margin: '4px 0 0' }}>Votre document est en cours d'examen. Nous vous notifierons dès qu'une décision sera prise.</p>
               </div>
             )}
 
             {verifStatus === 'denied' && (
-              <div style={{ background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.3)', borderRadius: 10, padding: '12px 14px', marginBottom: 12 }}>
+              <div style={{ background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.3)', borderRadius: 16, padding: '12px 14px', marginBottom: 12 }}>
                 <p style={{ color: 'var(--danger)', fontSize: '0.85rem', fontWeight: 600, margin: 0 }}>✗ Demande refusée</p>
                 {denialReason && <p style={{ color: 'var(--muted)', fontSize: '0.82rem', margin: '6px 0 0', lineHeight: 1.5 }}>Raison : {denialReason}</p>}
                 <p style={{ color: 'var(--muted)', fontSize: '0.78rem', margin: '8px 0 0' }}>Vous pouvez soumettre un nouveau document ci-dessous.</p>
@@ -148,19 +149,19 @@ export function ProfileModal({
                 <p style={sectionSub}>
                   Téléchargez une pièce d'identité (CNI, passeport ou permis de conduire) pour obtenir le badge ✓ Vérifié sur votre profil.
                 </p>
-                <label style={{ display: 'block', background: verifFile ? 'rgba(139,34,118,.1)' : 'var(--bg3)', border: `1px dashed ${verifFile ? 'var(--purple)' : 'var(--border)'}`, borderRadius: 10, padding: '14px', textAlign: 'center', cursor: 'pointer', transition: 'all .2s' }}>
+                <label style={{ display: 'block', background: verifFile ? 'rgba(139,34,118,.08)' : '#fff', border: `2px dashed ${verifFile ? 'var(--purple)' : '#e4d3df'}`, borderRadius: 16, padding: '14px', textAlign: 'center', cursor: 'pointer', transition: 'all .2s' }}>
                   <input type="file" accept="image/*,application/pdf" style={{ display: 'none' }} onChange={e => setVerifFile(e.target.files?.[0] || null)} />
                   {verifFile
-                    ? <span style={{ color: 'var(--purple3)', fontSize: '0.85rem', fontWeight: 600 }}>📄 {verifFile.name}</span>
-                    : <span style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>📎 Cliquez pour sélectionner votre document</span>
+                    ? <span style={{ color: 'var(--purple3)', fontSize: '0.85rem', fontWeight: 600 }}><Icon name="file" /> {verifFile.name}</span>
+                    : <span style={{ color: 'var(--muted)', fontSize: '0.85rem' }}><Icon name="clip" /> Cliquez pour sélectionner votre document</span>
                   }
                 </label>
                 <button
                   onClick={submitVerif}
                   disabled={!verifFile || verifLoading}
-                  style={{ marginTop: 10, width: '100%', background: 'linear-gradient(135deg,var(--purple),var(--purple2))', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 0', fontSize: '0.88rem', fontWeight: 600, cursor: (!verifFile || verifLoading) ? 'not-allowed' : 'pointer', opacity: (!verifFile || verifLoading) ? 0.6 : 1 }}
+                  style={{ marginTop: 10, width: '100%', background: 'var(--purple)', color: '#fff', border: 'none', borderRadius: 999, padding: '12px 0', fontSize: '0.92rem', fontWeight: 700, cursor: (!verifFile || verifLoading) ? 'not-allowed' : 'pointer', opacity: (!verifFile || verifLoading) ? 0.6 : 1 }}
                 >
-                  {verifLoading ? 'Envoi…' : '🛡️ Soumettre pour vérification'}
+                  {verifLoading ? 'Envoi…' : 'Soumettre pour vérification'}
                 </button>
               </>
             )}
@@ -170,14 +171,14 @@ export function ProfileModal({
         {/* ── Become organizer ── */}
         {!isOrganizer && onApply && (
           <div style={sectionStyle}>
-            <p style={sectionTitle}>🎤 Devenir organisateur</p>
+            <p style={sectionTitle}><Icon name="mic" /> Devenir organisateur</p>
             <p style={sectionSub}>Vous souhaitez créer et gérer vos propres événements ? Soumettez une demande.</p>
             {applyStatus === 'ok' ? (
               <p style={{ color: 'var(--success)', fontSize: '0.82rem' }}>✓ {applyMsg}</p>
             ) : (
               <>
                 <textarea
-                  style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 10, padding: '9px 13px', color: 'var(--text)', fontSize: '0.85rem', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }}
+                  style={{ width: '100%', background: '#fff', border: '2px solid #e4d3df', borderRadius: 16, padding: '11px 14px', color: 'var(--text)', fontSize: '0.85rem', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }}
                   rows={3}
                   placeholder="Décrivez votre projet (type d'événements, ville, fréquence…)"
                   value={applyReason}
@@ -187,7 +188,7 @@ export function ProfileModal({
                 <button
                   onClick={submitApply}
                   disabled={applyStatus === 'loading'}
-                  style={{ marginTop: 8, width: '100%', background: 'linear-gradient(135deg,var(--orange),var(--orange2))', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 0', fontSize: '0.88rem', fontWeight: 600, cursor: applyStatus === 'loading' ? 'not-allowed' : 'pointer', opacity: applyStatus === 'loading' ? 0.7 : 1 }}
+                  style={{ marginTop: 8, width: '100%', background: 'var(--orange)', color: 'var(--plum)', border: 'none', borderRadius: 999, padding: '12px 0', fontSize: '0.92rem', fontWeight: 700, cursor: applyStatus === 'loading' ? 'not-allowed' : 'pointer', opacity: applyStatus === 'loading' ? 0.7 : 1 }}
                 >
                   {applyStatus === 'loading' ? 'Envoi…' : 'Envoyer la demande'}
                 </button>
@@ -199,7 +200,7 @@ export function ProfileModal({
         {/* ── Push notifications ── */}
         {'Notification' in window && pushState !== 'denied' && (
           <div style={sectionStyle}>
-            <p style={sectionTitle}>🔔 Notifications push</p>
+            <p style={sectionTitle}><Icon name="bell" /> Notifications push</p>
             <p style={sectionSub}>
               {pushState === 'granted' ? 'Vous recevez des notifications pour vos achats et événements.' : 'Activez les notifications pour recevoir vos confirmations de billets.'}
             </p>
@@ -209,9 +210,9 @@ export function ProfileModal({
                 if (pushState === 'granted') { setPushState('loading'); await onUnsubscribePush?.(); setPushState('default') }
                 else { setPushState('loading'); const ok = await onSubscribePush?.(); setPushState(ok ? 'granted' : (Notification.permission === 'denied' ? 'denied' : 'default')) }
               }}
-              style={{ width: '100%', border: '1px solid var(--border)', borderRadius: 10, padding: '9px 0', fontSize: '0.85rem', fontWeight: 600, cursor: pushState === 'loading' ? 'not-allowed' : 'pointer', background: pushState === 'granted' ? 'rgba(239,68,68,.1)' : 'linear-gradient(135deg,var(--purple),var(--purple2))', color: pushState === 'granted' ? 'var(--danger)' : '#fff', opacity: pushState === 'loading' ? 0.6 : 1 }}
+              style={{ width: '100%', border: 0, borderRadius: 999, padding: '12px 0', fontSize: '0.92rem', fontWeight: 700, cursor: pushState === 'loading' ? 'not-allowed' : 'pointer', background: pushState === 'granted' ? 'rgba(239,68,68,.1)' : 'var(--purple)', color: pushState === 'granted' ? 'var(--danger)' : '#fff', opacity: pushState === 'loading' ? 0.6 : 1 }}
             >
-              {pushState === 'loading' ? '…' : pushState === 'granted' ? '🔕 Désactiver les notifications' : '🔔 Activer les notifications'}
+              {pushState === 'loading' ? '…' : pushState === 'granted' ? 'Désactiver les notifications' : 'Activer les notifications'}
             </button>
           </div>
         )}
@@ -220,9 +221,9 @@ export function ProfileModal({
         {onDeleteAccount && (
           <button
             onClick={onDeleteAccount}
-            style={{ width: '100%', marginTop: 10, background: 'transparent', border: '1px solid rgba(239,68,68,.3)', color: 'var(--danger)', borderRadius: 10, padding: '10px 0', fontSize: '0.85rem', cursor: 'pointer' }}
+            style={{ width: '100%', marginTop: 10, background: 'transparent', border: '1.5px solid rgba(226,61,61,.35)', color: 'var(--danger)', borderRadius: 999, padding: '12px 0', fontSize: '0.88rem', fontWeight: 600, cursor: 'pointer' }}
           >
-            🗑️ Supprimer mon compte
+            <Icon name="trash" /> Supprimer mon compte
           </button>
         )}
       </ModalBody>

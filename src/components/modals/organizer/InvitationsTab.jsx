@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { inputStyle, labelStyle, groupStyle } from './shared.jsx'
 import { PUBLIC_URL } from '../../../utils/helpers.js'
+import { Icon } from '../../Icon.jsx'
 
 export function InvitationsTab({ myEvents, onInvite, onLoadInvitations, toast }) {
   const [selectedId,   setSelectedId]   = useState(myEvents[0]?.id ?? '')
@@ -59,11 +60,11 @@ export function InvitationsTab({ myEvents, onInvite, onLoadInvitations, toast })
             <label style={labelStyle}>Événement</label>
             <select style={inputStyle} value={selectedId} onChange={e => handleSelect(e.target.value)}>
               {myEvents.map(e => (
-                <option key={e.id} value={e.id}>{e.isPrivate ? '🔒 ' : ''}{e.title}</option>
+                <option key={e.id} value={e.id}>{e.isPrivate ? '(Privé) ' : ''}{e.title}</option>
               ))}
             </select>
             {selectedEvent && !selectedEvent.isPrivate && (
-              <p style={{ color: 'var(--orange)', fontSize: '0.78rem', marginTop: 6 }}>⚠️ Cet événement est public. Les invitations fonctionnent mais tout le monde peut y accéder.</p>
+              <p style={{ color: 'var(--orange)', fontSize: '0.78rem', marginTop: 6 }}><Icon name="alert" /> Cet événement est public. Les invitations fonctionnent mais tout le monde peut y accéder.</p>
             )}
           </div>
 
@@ -81,7 +82,7 @@ export function InvitationsTab({ myEvents, onInvite, onLoadInvitations, toast })
               disabled={loading || !email.trim()}
               style={{ flexShrink: 0, background: 'linear-gradient(135deg, var(--purple), var(--purple2))', color: '#fff', border: 'none', borderRadius: 10, padding: '0 18px', cursor: loading ? 'not-allowed' : 'pointer', fontSize: '0.85rem', fontWeight: 600, opacity: loading ? 0.7 : 1 }}
             >
-              {loading ? '…' : '✉️ Inviter'}
+              {loading ? '…' : 'Inviter'}
             </button>
           </div>
 
@@ -96,14 +97,14 @@ export function InvitationsTab({ myEvents, onInvite, onLoadInvitations, toast })
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: '0.88rem', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inv.email}</div>
                       <div style={{ fontSize: '0.72rem', color: inv.status === 'accepted' ? 'var(--success)' : inv.status === 'declined' ? 'var(--danger)' : 'var(--muted)', marginTop: 2 }}>
-                        {inv.status === 'accepted' ? '✓ Accepté' : inv.status === 'declined' ? '✗ Décliné' : '⏳ En attente'}
+                        {inv.status === 'accepted' ? '✓ Accepté' : inv.status === 'declined' ? '✗ Décliné' : 'En attente'}
                       </div>
                     </div>
                     <button
                       onClick={() => copyLink(inv.token)}
                       style={{ flexShrink: 0, background: 'transparent', border: '1px solid var(--border)', color: copied === inv.token ? 'var(--success)' : 'var(--muted)', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', fontSize: '0.75rem', transition: 'all .2s' }}
                     >
-                      {copied === inv.token ? '✓ Copié' : '🔗 Lien'}
+                      {copied === inv.token ? '✓ Copié' : 'Lien'}
                     </button>
                   </div>
                 ))}

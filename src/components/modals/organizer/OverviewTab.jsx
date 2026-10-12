@@ -1,57 +1,51 @@
 import { formatDate, ORGANIZER_FEE_PCT, organizerNet } from '../../../utils/helpers.js'
 import { Spinner, ErrorBanner } from './shared.jsx'
+import { Icon } from '../../Icon.jsx'
+import styles from '../OrganizerModal.module.css'
 
 export function OverviewTab({ organizerStats, loading, errors, onRefresh }) {
   if (loading.stats) return <Spinner />
   if (errors.stats) return <ErrorBanner msg={errors.stats} onRetry={onRefresh} />
 
   const s = organizerStats || {}
+  const gross = s.total_revenue_cfa ?? 0
   const stats = [
-    { label: 'Événements publiés',  value: s.published_events   ?? 0,                          color: 'var(--orange)'  },
-    { label: 'Billets vendus',      value: s.total_tickets_sold ?? 0,                          color: 'var(--purple2)' },
-    { label: 'Ventes brutes (FCFA)', value: (s.total_revenue_cfa ?? 0).toLocaleString('fr-FR'), color: 'var(--orange)' },
-    { label: `Net après commission ${ORGANIZER_FEE_PCT}% (FCFA)`, value: organizerNet(s.total_revenue_cfa ?? 0).toLocaleString('fr-FR'), color: 'var(--success)' },
-    { label: 'Participants uniques',value: s.unique_attendees   ?? 0,                          color: 'var(--orange2)' },
+    { label: `Net après commission ${ORGANIZER_FEE_PCT}% (FCFA)`, value: organizerNet(gross).toLocaleString('fr-FR'), icon: 'wallet', hero: true },
+    { label: 'Ventes brutes (FCFA)', value: gross.toLocaleString('fr-FR'), icon: 'card' },
+    { label: 'Billets vendus',       value: s.total_tickets_sold ?? 0,     icon: 'ticket' },
+    { label: 'Événements publiés',   value: s.published_events ?? 0,       icon: 'calendar' },
+    { label: 'Participants uniques', value: s.unique_attendees ?? 0,       icon: 'users' },
   ]
 
   return (
     <div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12, marginBottom: 24 }}>
-        {stats.map((s) => (
-          <div key={s.label} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 14px' }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.6rem', color: s.color, lineHeight: 1, marginBottom: 4 }}>{s.value}</div>
-            <div style={{ color: 'var(--muted)', fontSize: '0.76rem' }}>{s.label}</div>
+      <div className={styles.stats}>
+        {stats.map((st, i) => (
+          <div key={st.label} className={[styles.stat, st.hero ? styles.statHero : ''].join(' ')} style={{ '--i': i }}>
+            <div className={styles.statIcon}><Icon name={st.icon} /></div>
+            <div className={styles.statVal}>{st.value}</div>
+            <div className={styles.statLabel}>{st.label}</div>
           </div>
         ))}
       </div>
 
       {s.events_breakdown?.length > 0 && (
         <>
-          <p style={{ color: 'var(--muted)', fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Par événement</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <h3 className={styles.sectionTitle}>Par événement</h3>
+          <div className={styles.breakdown}>
             {s.events_breakdown.map((e) => (
-              <div key={e.event_id} style={{
-                background: 'var(--bg3)', border: '1px solid var(--border)',
-                borderRadius: 10, padding: '12px 14px',
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap',
-              }}>
+              <div key={e.event_id} className={styles.bRow}>
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: '0.88rem' }}>{e.title}</div>
-                  <div style={{ color: 'var(--muted)', fontSize: '0.75rem', marginTop: 2 }}>{formatDate(e.event_date.slice(0, 10))}</div>
+                  <div className={styles.bTitle}>{e.title}</div>
+                  <div className={styles.bDate}>{formatDate(e.event_date.slice(0, 10))}</div>
                 </div>
-                <div style={{ display: 'flex', gap: 16, flexShrink: 0 }}>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontWeight: 700, color: 'var(--purple2)', fontSize: '0.95rem' }}>{e.tickets_sold}</div>
-                    <div style={{ color: 'var(--muted)', fontSize: '0.7rem' }}>billets</div>
+                <div className={styles.bNums}>
+                  <div className={styles.bNum}><b>{e.tickets_sold}</b><small>billets</small></div>
+                  <div className={styles.bNum}>
+                    <b>{(e.revenue_cfa || 0).toLocaleString('fr-FR')}</b>
+                    <small>FCFA brut · net {organizerNet(e.revenue_cfa).toLocaleString('fr-FR')}</small>
                   </div>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontWeight: 700, color: 'var(--orange)', fontSize: '0.95rem' }}>{(e.revenue_cfa || 0).toLocaleString('fr-FR')}</div>
-                    <div style={{ color: 'var(--muted)', fontSize: '0.7rem' }}>FCFA brut · net {organizerNet(e.revenue_cfa).toLocaleString('fr-FR')}</div>
-                  </div>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontWeight: 700, color: 'var(--success)', fontSize: '0.95rem' }}>{e.attendee_count}</div>
-                    <div style={{ color: 'var(--muted)', fontSize: '0.7rem' }}>participants</div>
-                  </div>
+                  <div className={styles.bNum}><b>{e.attendee_count}</b><small>participants</small></div>
                 </div>
               </div>
             ))}
@@ -60,9 +54,10 @@ export function OverviewTab({ organizerStats, loading, errors, onRefresh }) {
       )}
 
       {!organizerStats && (
-        <p style={{ color: 'var(--muted)', fontSize: '0.85rem', textAlign: 'center', padding: '24px 0' }}>
+        <div className={styles.state}>
+          <div className={styles.stateIcon}><Icon name="plus" /></div>
           Créez votre premier événement depuis l'onglet <b>Créer</b>.
-        </p>
+        </div>
       )}
     </div>
   )

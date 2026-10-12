@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import jsQR from 'jsqr'
+import { Icon } from './Icon.jsx'
 
 // Scans camera feed for QR codes, calls onScan(data) once per unique code
 export function QRScanner({ onScan, onClose }) {
@@ -151,7 +152,7 @@ export function QRScanner({ onScan, onClose }) {
               background: 'rgba(239,68,68,0.9)', borderRadius: 16,
               padding: '20px 24px', color: '#fff', textAlign: 'center', fontSize: '0.9rem',
             }}>
-              <div style={{ fontSize: '2rem', marginBottom: 8 }}>📷</div>
+              <div style={{ fontSize: '2rem', marginBottom: 8 }}><Icon name="camera" /></div>
               {error}
             </div>
           </div>

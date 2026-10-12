@@ -7,7 +7,7 @@ export function useOrganizerActions(store, toast, { setCities }) {
   const onCreate = async (ev) => {
     const created = await store.createEvent(ev)
     if (!created) { toast("Impossible de créer l'événement", 'error'); return null }
-    toast('Événement envoyé pour validation ⏳', 'success')
+    toast('Événement envoyé pour validation', 'success')
     return created
   }
 
@@ -26,7 +26,7 @@ export function useOrganizerActions(store, toast, { setCities }) {
   const onRefund = async (orderId, reason) => {
     const r = await store.refundOrder(orderId, reason)
     if (!r.ok) { toast(r.error || 'Impossible d’envoyer la demande', 'error'); return }
-    toast('Demande de remboursement envoyée à l’administrateur ↩', 'info')
+    toast('Demande de remboursement envoyée à l’administrateur', 'info')
   }
 
   const onApproveRefund = async (requestId, mode, phone) => {

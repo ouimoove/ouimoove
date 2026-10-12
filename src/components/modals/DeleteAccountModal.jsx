@@ -15,7 +15,7 @@ export function DeleteAccountModal({ open, onClose, onConfirm, toast }) {
     const result = await onConfirm()
     setLoading(false)
     if (result?.ok) {
-      toast?.('Compte supprimé. Au revoir 👋', 'info')
+      toast?.('Compte supprimé. Au revoir', 'info')
       close()
     } else {
       toast?.(result?.error || "Impossible de supprimer le compte.", 'error')
@@ -24,7 +24,7 @@ export function DeleteAccountModal({ open, onClose, onConfirm, toast }) {
 
   return (
     <Modal open={open} onClose={close}>
-      <ModalHeader title="⚠️ Supprimer mon compte" subtitle="Cette action est irréversible" />
+      <ModalHeader title="Supprimer mon compte" subtitle="Cette action est irréversible" />
       <ModalBody>
         <div style={{
           background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.3)',

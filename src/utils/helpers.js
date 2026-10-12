@@ -55,3 +55,11 @@ export const eventShareUrl = (id) => `${PUBLIC_URL}/e/${encodeURIComponent(id)}`
 // (deducted from what they receive). Free tickets carry no fee.
 export const ORGANIZER_FEE_PCT = 10
 export const organizerNet = (gross) => Math.round((Number(gross) || 0) * (100 - ORGANIZER_FEE_PCT) / 100)
+
+const MONTHS_FR = ['JAN', 'FÉV', 'MAR', 'AVR', 'MAI', 'JUIN', 'JUIL', 'AOÛT', 'SEP', 'OCT', 'NOV', 'DÉC']
+// 'YYYY-MM-DD' -> { day: '16', mon: 'OCT' } for the little calendar tile on event cards.
+export function dateParts(date) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(date || ''))
+  if (!m) return { day: '', mon: '' }
+  return { day: String(Number(m[3])), mon: MONTHS_FR[Number(m[2]) - 1] || '' }
+}

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Modal, ModalHeader, ModalBody } from '../Modal.jsx'
 import { formatDate } from '../../utils/helpers.js'
+import { Icon } from '../Icon.jsx'
 
 const primaryBtn = {
   background: 'linear-gradient(135deg, var(--orange1), var(--orange2))',
@@ -27,7 +28,7 @@ export function RSVPModal({ open, onClose, invite, onRespond }) {
   return (
     <Modal open={open} onClose={onClose} size="sm">
       <ModalHeader
-        title={`${invite.event_emoji || '🎉'} Vous êtes invité(e)`}
+        title="Vous êtes invité(e)"
         subtitle="Confirmez votre présence à cet événement privé"
       />
       <ModalBody>
@@ -37,7 +38,7 @@ export function RSVPModal({ open, onClose, invite, onRespond }) {
         }}>
           <div style={{ fontWeight: 700, fontSize: '1.05rem', marginBottom: 4 }}>{invite.event_title}</div>
           <div style={{ color: 'var(--purple3)', fontSize: '0.88rem' }}>
-            📅 {invite.event_date ? formatDate(invite.event_date) : ''} &nbsp;·&nbsp; 📍 {invite.event_city}
+            <Icon name="calendar" /> {invite.event_date ? formatDate(invite.event_date) : ''} &nbsp;·&nbsp; <Icon name="pin" /> {invite.event_city}
           </div>
         </div>
 
@@ -54,7 +55,7 @@ export function RSVPModal({ open, onClose, invite, onRespond }) {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <button style={{ ...primaryBtn, opacity: loading ? 0.6 : 1 }} disabled={!!loading} onClick={() => respond('accepted')}>
-            {loading === 'accepted' ? 'Confirmation…' : '🎉 J\'y serai'}
+            {loading === 'accepted' ? 'Confirmation…' : 'J\'y serai'}
           </button>
           <button style={{ ...declineBtn, opacity: loading ? 0.6 : 1 }} disabled={!!loading} onClick={() => respond('declined')}>
             {loading === 'declined' ? 'Envoi…' : 'Je ne pourrai pas venir'}

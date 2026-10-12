@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Modal, ModalBody } from '../Modal.jsx'
 import { formatDate, fmtPrice, eventShareUrl } from '../../utils/helpers.js'
 import styles from './EventDetailModal.module.css'
+import { Icon, categoryIcon } from '../Icon.jsx'
 
 export function EventDetailModal({ open, event, onClose, onAddToCart, toast }) {
   const [selections, setSelections] = useState({})
@@ -56,7 +57,7 @@ export function EventDetailModal({ open, event, onClose, onAddToCart, toast }) {
             onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'flex' }}
           />
         ) : null}
-        <div className={styles.imgPlaceholder} style={event.imageUrl ? { display: 'none' } : {}}>{event.emoji || '🎉'}</div>
+        <div className={styles.imgPlaceholder} style={event.imageUrl ? { display: 'none' } : {}}><Icon name={categoryIcon(event.category)} /></div>
 
         <div className={styles.categoryBadge}>{event.category}</div>
         <h2 className={styles.title}>{event.title}</h2>
@@ -66,16 +67,16 @@ export function EventDetailModal({ open, event, onClose, onAddToCart, toast }) {
         <p className={styles.desc}>{event.desc}</p>
 
         <div className={styles.meta}>
-          <span>📅 <b>{formatDate(event.date)}</b> à {event.time}</span>
-          <span>📍 {event.location}, {event.city}</span>
+          <span className={styles.metaChip}><Icon name="calendar" /> <b>{formatDate(event.date)}</b> à {event.time}</span>
+          <span className={styles.metaChip}><Icon name="pin" /> {event.location}, {event.city}</span>
         </div>
 
         <div className={styles.shareRow}>
-          <button onClick={shareWhatsapp} className={styles.shareBtn} aria-label="Partager sur WhatsApp">💬 WhatsApp</button>
-          <button onClick={shareFacebook} className={styles.shareBtn} aria-label="Partager sur Facebook">📘 Facebook</button>
-          <button onClick={copyLink} className={styles.shareBtn} aria-label="Copier le lien">🔗 Copier le lien</button>
+          <button onClick={shareWhatsapp} className={styles.shareBtn} aria-label="Partager sur WhatsApp"><Icon name="chat" /> WhatsApp</button>
+          <button onClick={shareFacebook} className={styles.shareBtn} aria-label="Partager sur Facebook"><Icon name="globe" /> Facebook</button>
+          <button onClick={copyLink} className={styles.shareBtn} aria-label="Copier le lien"><Icon name="link" /> Copier le lien</button>
           {typeof navigator !== 'undefined' && navigator.share && (
-            <button onClick={nativeShare} className={styles.shareBtn} aria-label="Partager">📤 Partager</button>
+            <button onClick={nativeShare} className={styles.shareBtn} aria-label="Partager"><Icon name="send" /> Partager</button>
           )}
         </div>
 
@@ -85,16 +86,16 @@ export function EventDetailModal({ open, event, onClose, onAddToCart, toast }) {
           const avail = t.total - t.sold
           const qty = selections[`${event.id}_${i}`] ?? 0
           return (
-            <div key={i} className={styles.ticketRow}>
+            <div key={i} className={[styles.ticketRow, qty > 0 ? styles.ticketOn : ''].join(' ')}>
               <div className={styles.ticketInfo}>
                 <div className={styles.ticketName}>{t.name}</div>
                 <div className={styles.ticketPrice}>{fmtPrice(t.price)}</div>
                 <div className={styles.ticketLeft}>{avail} restants</div>
               </div>
               <div className={styles.qtyCtrl}>
-                <button className={styles.qtyBtn} onClick={() => changeQty(i, -1)} disabled={isPast}>−</button>
+                <button className={styles.qtyBtn} onClick={() => changeQty(i, -1)} disabled={isPast || qty <= 0} aria-label="Retirer un billet"><Icon name="minus" size="1rem" /></button>
                 <span className={styles.qtyVal}>{qty}</span>
-                <button className={styles.qtyBtn} onClick={() => changeQty(i, +1)} disabled={isPast || qty >= avail}>+</button>
+                <button className={styles.qtyBtn} onClick={() => changeQty(i, +1)} disabled={isPast || qty >= avail} aria-label="Ajouter un billet"><Icon name="plus" size="1rem" /></button>
               </div>
             </div>
           )
@@ -109,7 +110,7 @@ export function EventDetailModal({ open, event, onClose, onAddToCart, toast }) {
           <div className={styles.pastNotice}>Cet événement est déjà passé — les billets ne sont plus disponibles.</div>
         ) : (
           <button className={styles.addBtn} onClick={() => onAddToCart(selections)}>
-            Ajouter au panier 🛒
+            Ajouter au panier <Icon name="cart" />
           </button>
         )}
       </ModalBody>

@@ -1,61 +1,35 @@
 import { useState, useEffect } from 'react'
 import { Modal, ModalHeader, ModalBody } from '../Modal.jsx'
 import { clickable } from '../../utils/helpers.js'
+import { Icon } from '../Icon.jsx'
+import { STEPS, FAQS } from '../../data/content.js'
 
 /* ════════════════════════════════════════════════════════════
    Shared bits
    ════════════════════════════════════════════════════════════ */
 const card = {
-  background: 'var(--bg3)',
-  border: '1px solid var(--border)',
-  borderRadius: 14,
-  padding: '16px 18px',
+  background: 'var(--cream)',
+  border: '2px solid var(--line)',
+  borderRadius: 24,
+  padding: '18px 20px',
 }
 const primaryBtn = {
-  background: 'linear-gradient(135deg, var(--orange), #d97f0a)',
-  color: '#fff', border: 'none', borderRadius: 12,
-  padding: '12px 22px', fontWeight: 700, fontSize: '0.95rem',
+  background: 'var(--orange)',
+  color: 'var(--plum)', border: 'none', borderRadius: 999,
+  padding: '13px 26px', fontWeight: 700, fontSize: '0.95rem',
   cursor: 'pointer', fontFamily: 'var(--font-body)',
-  boxShadow: '0 4px 18px rgba(244,154,14,.32)',
+  boxShadow: '0 8px 22px rgba(244,154,14,.34)',
 }
 const ghostBtn = {
-  background: 'transparent', color: 'var(--muted)',
-  border: '1px solid var(--border)', borderRadius: 12,
-  padding: '12px 18px', fontWeight: 600, fontSize: '0.92rem',
+  background: '#fff', color: 'var(--purple)',
+  border: '2px solid #e4d3df', borderRadius: 999,
+  padding: '12px 22px', fontWeight: 700, fontSize: '0.92rem',
   cursor: 'pointer', fontFamily: 'var(--font-body)',
 }
 
 /* ════════════════════════════════════════════════════════════
    Onboarding — explains the concept to new users
    ════════════════════════════════════════════════════════════ */
-const STEPS = [
-  {
-    emoji: '🎉',
-    title: 'Bienvenue sur OuiMoove',
-    text: "La billetterie des événements d'Afrique de l'Ouest. Concerts, festivals, sport, conférences, gastronomie — tout est ici, en quelques clics.",
-  },
-  {
-    emoji: '🔎',
-    title: 'Trouvez votre événement',
-    text: 'Parcourez les événements près de chez vous. Filtrez par ville et par catégorie, triez par date ou par prix, et ajoutez vos coups de cœur en favoris.',
-  },
-  {
-    emoji: '🎟️',
-    title: 'Réservez en quelques secondes',
-    text: 'Choisissez vos billets et payez en toute sécurité par Tmoney (Mixx), Flooz (Moov Money) ou carte bancaire. Jusqu’à 10 billets par commande.',
-  },
-  {
-    emoji: '📲',
-    title: 'Votre billet, c’est votre QR code',
-    text: 'Retrouvez vos billets dans « Mes Billets ». Présentez le QR code à l’entrée : l’organisateur le scanne et vous entrez. Aucun papier nécessaire.',
-  },
-  {
-    emoji: '🏪',
-    title: 'Revendez en toute sécurité',
-    text: 'Un empêchement ? Mettez vos billets en revente sur le Marché OuiMoove. Vous organisez ? Publiez votre événement gratuitement et suivez vos ventes en direct.',
-  },
-]
-
 export function OnboardingModal({ open, onClose }) {
   const [step, setStep] = useState(0)
   const isLast = step === STEPS.length - 1
@@ -68,12 +42,14 @@ export function OnboardingModal({ open, onClose }) {
       <ModalBody>
         <div style={{ textAlign: 'center', padding: '8px 4px 4px' }}>
           <div style={{
-            fontSize: '3.4rem', lineHeight: 1, marginBottom: 18,
-            filter: 'drop-shadow(0 6px 16px rgba(139,34,118,.25))',
-          }}>{s.emoji}</div>
+            width: 88, height: 88, borderRadius: '50%', margin: '0 auto 20px', fontSize: '2.3rem', color: '#fff',
+            display: 'grid', placeItems: 'center',
+            background: 'radial-gradient(circle at 80% 15%, rgba(244,154,14,.6), transparent 60%), linear-gradient(145deg, var(--deep), var(--purple))',
+            boxShadow: '0 12px 30px rgba(139,34,118,.35)',
+          }}><Icon glyph={s.emoji} /></div>
           <h2 style={{
             fontFamily: 'var(--font-display)', fontWeight: 800,
-            fontSize: '1.5rem', marginBottom: 12, color: 'var(--text)',
+            fontSize: '1.5rem', marginBottom: 12, color: 'var(--plum)',
           }}>{s.title}</h2>
           <p style={{
             color: 'var(--muted)', fontSize: '0.97rem', lineHeight: 1.6,
@@ -85,7 +61,7 @@ export function OnboardingModal({ open, onClose }) {
             {STEPS.map((_, i) => (
               <span key={i} {...clickable(() => setStep(i))} aria-label={`Étape ${i + 1}`} style={{
                 width: i === step ? 22 : 8, height: 8, borderRadius: 99,
-                background: i === step ? 'var(--purple)' : 'var(--border)',
+                background: i === step ? 'var(--purple)' : '#e4d3df',
                 cursor: 'pointer', transition: 'all .25s',
               }} />
             ))}
@@ -96,7 +72,7 @@ export function OnboardingModal({ open, onClose }) {
               <button style={ghostBtn} onClick={() => setStep(step - 1)}>← Précédent</button>
             )}
             {isLast ? (
-              <button style={primaryBtn} onClick={finish}>C’est parti 🚀</button>
+              <button style={primaryBtn} onClick={finish}>C’est parti <Icon name="rocket" /></button>
             ) : (
               <button style={primaryBtn} onClick={() => setStep(step + 1)}>Suivant →</button>
             )}
@@ -118,49 +94,14 @@ export function OnboardingModal({ open, onClose }) {
 /* ════════════════════════════════════════════════════════════
    FAQ — accordion
    ════════════════════════════════════════════════════════════ */
-const FAQS = [
-  {
-    q: 'Comment acheter un billet ?',
-    a: 'Ouvrez un événement, sélectionnez le type et la quantité de billets, puis cliquez sur « Réserver ». Vous payez ensuite par Tmoney, Flooz ou carte bancaire. Vos billets apparaissent immédiatement dans « Mes Billets ».',
-  },
-  {
-    q: 'Quels moyens de paiement acceptez-vous ?',
-    a: 'Tmoney (Mixx by Yas), Flooz (Moov Money) et les cartes bancaires Visa / Mastercard. Le paiement mobile est instantané et sécurisé.',
-  },
-  {
-    q: 'Où se trouvent mes billets après l’achat ?',
-    a: 'Dans le menu « Mes Billets ». Chaque billet affiche un QR code que vous présentez à l’entrée de l’événement. Pas besoin de l’imprimer — votre téléphone suffit.',
-  },
-  {
-    q: 'Comment se passe l’entrée à l’événement ?',
-    a: 'L’organisateur scanne le QR code de votre billet à l’entrée. Une fois validé, le billet est marqué comme utilisé. Pour une commande de plusieurs billets, l’organisateur peut valider les entrées une par une.',
-  },
-  {
-    q: 'Puis-je revendre un billet que je ne peux plus utiliser ?',
-    a: 'Oui. Dans « Mes Billets », cliquez sur « Revendre » et fixez votre prix. Votre billet est alors proposé sur le Marché de revente OuiMoove à d’autres utilisateurs.',
-  },
-  {
-    q: 'Combien de billets puis-je acheter ?',
-    a: 'Jusqu’à 10 billets par commande, afin de garantir un accès équitable pour tous.',
-  },
-  {
-    q: 'Comment organiser et publier mon propre événement ?',
-    a: 'Cliquez sur « Créer un événement ». Votre compte passe en mode organisateur : vous publiez gratuitement, définissez vos types de billets, suivez vos ventes en temps réel et scannez les entrées le jour J.',
-  },
-  {
-    q: 'Puis-je être remboursé ?',
-    a: 'Les remboursements dépendent de la politique de chaque organisateur. En cas d’annulation d’un événement, contactez-nous via le formulaire de contact et nous traiterons votre demande.',
-  },
-]
-
 function FaqItem({ q, a, open, onToggle }) {
   return (
-    <div style={{ ...card, padding: 0, marginBottom: 10, overflow: 'hidden' }}>
+    <div style={{ ...card, background: '#fff', padding: 0, marginBottom: 12, overflow: 'hidden' }}>
       <button onClick={onToggle} style={{
         width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         gap: 12, padding: '14px 16px', background: 'transparent', border: 'none',
         cursor: 'pointer', textAlign: 'left', fontFamily: 'var(--font-body)',
-        fontSize: '0.95rem', fontWeight: 600, color: 'var(--text)',
+        fontSize: '0.98rem', fontWeight: 700, color: 'var(--plum)',
       }}>
         <span>{q}</span>
         <span style={{
@@ -182,7 +123,7 @@ export function FaqModal({ open, onClose, onContact }) {
   const [openIdx, setOpenIdx] = useState(0)
   return (
     <Modal open={open} onClose={onClose} size="lg">
-      <ModalHeader title="❓ Questions fréquentes" subtitle="Tout ce qu’il faut savoir sur OuiMoove" />
+      <ModalHeader title="Questions fréquentes" subtitle="Tout ce qu’il faut savoir sur OuiMoove" />
       <ModalBody>
         {FAQS.map((f, i) => (
           <FaqItem key={i} q={f.q} a={f.a} open={openIdx === i} onToggle={() => setOpenIdx(openIdx === i ? -1 : i)} />
@@ -241,11 +182,11 @@ export function ContactModal({ open, onClose, onSubmit, user, toast }) {
 
   return (
     <Modal open={open} onClose={close}>
-      <ModalHeader title="✉️ Contactez-nous" subtitle="Une question, un souci ? Écrivez-nous." />
+      <ModalHeader title="Contactez-nous" subtitle="Une question, un souci ? Écrivez-nous." />
       <ModalBody>
         {sent ? (
           <div style={{ textAlign: 'center', padding: '24px 8px' }}>
-            <div style={{ fontSize: '3rem', marginBottom: 12 }}>✅</div>
+            <div style={{ fontSize: '3rem', marginBottom: 12 }}><Icon name="checkCircle" /></div>
             <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.2rem', marginBottom: 8 }}>
               Message envoyé !
             </h3>
@@ -332,7 +273,7 @@ export function TermsBody() {
 export function TermsModal({ open, onClose }) {
   return (
     <Modal open={open} onClose={onClose} size="lg">
-      <ModalHeader title="📜 Conditions d’utilisation" subtitle="Dernière mise à jour : 2026" />
+      <ModalHeader title="Conditions d’utilisation" subtitle="Dernière mise à jour : 2026" />
       <ModalBody>
         <TermsBody />
       </ModalBody>
@@ -371,7 +312,7 @@ const PRIVACY_SECTIONS = [
 export function PrivacyModal({ open, onClose, onDeleteAccount }) {
   return (
     <Modal open={open} onClose={onClose} size="lg">
-      <ModalHeader title="🔒 Politique de confidentialité" subtitle="RGPD (UE) & CCPA (Californie) — Dernière mise à jour : 2026" />
+      <ModalHeader title="Politique de confidentialité" subtitle="RGPD (UE) & CCPA (Californie) — Dernière mise à jour : 2026" />
       <ModalBody>
         {PRIVACY_SECTIONS.map(([h, p], i) => (
           <div key={i} style={{ marginBottom: 16 }}>
