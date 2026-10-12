@@ -12,6 +12,7 @@ import { Hero } from './components/Hero.jsx'
 import { EventGrid } from './components/EventGrid.jsx'
 import { Footer } from './components/Footer.jsx'
 import { Toast } from './components/Toast.jsx'
+import { navigate } from './weddings/router.js'
 
 // Every modal below is code-split: none of it is needed for first paint
 // (Navbar/Hero/EventGrid above stay eagerly bundled since that's the page
@@ -204,6 +205,9 @@ function App() {
     open('organizer')
   }
 
+  // Ouimoove Weddings is its own area of the app (see main.jsx).
+  const openWeddings = () => navigate('/mariage')
+
   const handleLogoClick = () => {
     setSearch('')
     setFilterCity('')
@@ -235,6 +239,7 @@ function App() {
         onLogoClick={handleLogoClick}
         onMarket={() => open('market')}
         onCreateEvent={handleCreateEvent}
+        onWeddings={openWeddings}
       />
 
       <Hero
@@ -243,6 +248,7 @@ function App() {
         filterCategory={filterCategory} setFilterCategory={setFilterCategory}
         sortBy={sortBy}           setSortBy={setSortBy}
         onCreateEvent={handleCreateEvent}
+        onWeddings={openWeddings}
       />
 
       <EventGrid
@@ -507,6 +513,7 @@ function App() {
         onPrivacy={() => open('privacy')}
         onMarket={() => open('market')}
         onCreateEvent={handleCreateEvent}
+        onWeddings={openWeddings}
       />
 
       <Toast toasts={toasts} />

@@ -1,0 +1,79 @@
+/* The couple's public wedding page (/w/<slug>). Colours come from the
+   chosen theme as CSS variables set on .page. */
+.page {
+  --serif: 'Cormorant Garamond', 'Times New Roman', serif;
+  position: relative; z-index: 1; min-height: 100vh;
+  background: var(--s-bg); color: var(--s-ink);
+  font-family: var(--font-body);
+}
+.bar { position: absolute; top: 0; left: 0; right: 0; z-index: 5; display: flex; justify-content: space-between; align-items: center; padding: calc(14px + env(safe-area-inset-top)) 18px 0; }
+.mark { font-family: var(--serif); font-style: italic; font-weight: 600; font-size: 1.05rem; color: inherit; text-decoration: none; opacity: .85; }
+.lang { display: inline-flex; border-radius: 999px; overflow: hidden; border: 1px solid currentColor; opacity: .9; }
+.lang button { background: transparent; border: 0; color: inherit; padding: 5px 10px; font-size: .72rem; font-weight: 700; letter-spacing: .06em; cursor: pointer; }
+.lang button[aria-pressed='true'] { background: var(--s-accent); color: #fff; }
+.onPhoto { color: #fff; }
+
+.hero { position: relative; min-height: 92vh; display: grid; place-items: center; text-align: center; padding: 96px 20px 72px; overflow: hidden; }
+.heroPlain { background: radial-gradient(ellipse 80% 60% at 50% 0%, var(--s-soft) 0%, transparent 72%), var(--s-bg); }
+.heroPhoto { color: #fff; background-size: cover; background-position: center; }
+.heroPhoto::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10, 6, 14, .35) 0%, rgba(10, 6, 14, .25) 45%, rgba(10, 6, 14, .7) 100%); }
+.heroInner { position: relative; max-width: 760px; }
+.kicker { font-size: .78rem; letter-spacing: .28em; text-transform: uppercase; font-weight: 700; opacity: .85; }
+.names { font-family: var(--serif); font-style: italic; font-weight: 600; font-size: clamp(3.4rem, 11vw, 7rem); line-height: .95; margin: 18px 0 10px; color: var(--s-accent); text-wrap: balance; }
+.heroPhoto .names { color: #fff; }
+.amp { color: var(--s-gold); font-style: normal; padding: 0 .1em; }
+.when { font-size: 1.1rem; letter-spacing: .02em; }
+.where { opacity: .8; margin-top: 4px; }
+.count { display: inline-flex; gap: 10px; align-items: baseline; margin-top: 22px; padding: 8px 16px; border-radius: 999px; border: 1px solid currentColor; }
+.count b { font-family: var(--serif); font-size: 1.6rem; font-weight: 600; }
+.tag { display: inline-block; margin-top: 16px; font-weight: 700; letter-spacing: .02em; color: var(--s-gold); }
+.heroPhoto .tag { color: #fff; }
+.slogan { font-family: var(--serif); font-style: italic; font-size: 1.35rem; margin-top: 8px; opacity: .9; }
+.cta { display: inline-block; margin-top: 26px; background: var(--s-accent); color: #fff; border: 0; border-radius: 999px; padding: 13px 28px; font-weight: 700; font-size: .95rem; cursor: pointer; text-decoration: none; box-shadow: 0 8px 26px rgba(0, 0, 0, .18); }
+.heroPhoto .cta { background: #fff; color: var(--s-ink); }
+
+.section { max-width: 760px; margin: 0 auto; padding: 56px 20px; }
+.sectionTitle { font-family: var(--serif); font-style: italic; font-weight: 600; font-size: 2.3rem; text-align: center; color: var(--s-accent); margin-bottom: 26px; }
+.rule { width: 64px; height: 1px; background: var(--s-gold); margin: -14px auto 28px; }
+.welcome { font-family: var(--serif); font-size: 1.45rem; line-height: 1.5; text-align: center; white-space: pre-line; }
+.story { font-size: 1.02rem; line-height: 1.75; white-space: pre-line; }
+
+.timeline { display: flex; flex-direction: column; gap: 14px; }
+.event { display: grid; grid-template-columns: 54px 1fr; gap: 14px; background: #fff; border: 1px solid var(--s-soft); border-radius: 18px; padding: 18px; box-shadow: 0 10px 30px rgba(0, 0, 0, .04); }
+.eventIcon { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; font-size: 1.4rem; background: var(--s-soft); }
+.eventTitle { font-weight: 700; font-size: 1.05rem; }
+.eventWhen { color: var(--s-accent); font-weight: 600; margin-top: 2px; }
+.eventWhere { opacity: .8; margin-top: 2px; font-size: .95rem; }
+.eventLinks { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--s-soft); border-radius: 999px; padding: 5px 12px; font-size: .82rem; color: inherit; text-decoration: none; background: var(--s-bg); }
+a.pill:hover { border-color: var(--s-accent); }
+
+.info { display: grid; gap: 14px; }
+.infoCard { background: #fff; border: 1px solid var(--s-soft); border-radius: 18px; padding: 18px; }
+.infoTitle { font-size: .74rem; letter-spacing: .14em; text-transform: uppercase; font-weight: 800; color: var(--s-accent); margin-bottom: 6px; }
+.infoText { white-space: pre-line; line-height: 1.6; }
+
+.form { background: #fff; border: 1px solid var(--s-soft); border-radius: 22px; padding: 22px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 10px 30px rgba(0, 0, 0, .05); }
+.label { font-size: .8rem; font-weight: 700; opacity: .8; display: block; margin-bottom: 6px; }
+.input { width: 100%; border: 1px solid var(--s-soft); background: var(--s-bg); border-radius: 12px; padding: 12px 14px; font: inherit; color: inherit; outline: none; }
+.input:focus { border-color: var(--s-accent); }
+.choice { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.choice button { border: 1.5px solid var(--s-soft); background: var(--s-bg); color: inherit; border-radius: 14px; padding: 14px; font: inherit; font-weight: 700; cursor: pointer; }
+.choice button[aria-pressed='true'] { border-color: var(--s-accent); background: var(--s-soft); }
+.submit { background: var(--s-accent); color: #fff; border: 0; border-radius: 14px; padding: 14px; font: inherit; font-weight: 700; cursor: pointer; font-size: 1rem; }
+.submit:disabled { opacity: .6; }
+.error { color: #b3261e; font-size: .88rem; }
+.thanks { text-align: center; padding: 26px 18px; }
+.thanks b { display: block; font-family: var(--serif); font-style: italic; font-size: 2rem; color: var(--s-accent); margin-bottom: 6px; }
+.muted { opacity: .7; font-size: .9rem; }
+
+.footer { text-align: center; padding: 34px 20px calc(40px + env(safe-area-inset-bottom)); font-size: .84rem; opacity: .75; }
+.footer a { color: inherit; font-weight: 700; }
+.center { min-height: 80vh; display: grid; place-items: center; text-align: center; padding: 24px; }
+
+@media (max-width: 560px) {
+  .event { grid-template-columns: 1fr; }
+  .eventIcon { width: 46px; height: 46px; }
+  .section { padding: 44px 16px; }
+  .hero { min-height: 86vh; }
+}

@@ -5,7 +5,7 @@ import styles from './Navbar.module.css'
 export function Navbar({
   user, cartCount, isOrganizer,
   onLogin, onSignup, onCart, onTickets,
-  onFavorites, onProfile, onOrganizer, onLogout, onLogoClick, onMarket, onCreateEvent, onFeed,
+  onFavorites, onProfile, onOrganizer, onLogout, onLogoClick, onMarket, onCreateEvent, onFeed, onWeddings,
 }) {
   const [logoErr, setLogoErr] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -32,6 +32,7 @@ export function Navbar({
           {!user ? (
             <>
               <button className={styles.btnPrimary} onClick={onCreateEvent}>✚ Créer un événement</button>
+              <button className={styles.btnGhost} onClick={onWeddings}>💍 Mariages</button>
               <button className={styles.btnGhost} onClick={onLogin}>Connexion</button>
               <button className={styles.btnGhost} onClick={onSignup}>Inscription</button>
             </>
@@ -46,6 +47,7 @@ export function Navbar({
               <button className={styles.btnGhost} onClick={onTickets}>🎟️ <span className={styles.label}>Mes Billets</span></button>
               <button className={styles.btnGhost} onClick={onFeed}>📸 <span className={styles.label}>Feed</span></button>
               <button className={styles.btnGhost} onClick={onMarket}>🏪 <span className={styles.label}>Marché</span></button>
+              <button className={styles.btnGhost} onClick={onWeddings}>💍 <span className={styles.label}>Mariages</span></button>
               {isOrganizer && (
                 <button className={styles.btnPurple} onClick={onOrganizer}>📊 <span className={styles.label}>Dashboard</span></button>
               )}
@@ -77,6 +79,7 @@ export function Navbar({
           {!user ? (
             <>
               <button className={styles.drawerBtn} onClick={close(onCreateEvent)}>✚ Créer un événement</button>
+              <button className={styles.drawerBtn} onClick={close(onWeddings)}>💍 Ouimoove Weddings</button>
               <button className={styles.drawerBtn} onClick={close(onLogin)}>🔑 Connexion</button>
               <button className={styles.drawerBtn} onClick={close(onSignup)}>📝 Inscription</button>
             </>
@@ -87,6 +90,7 @@ export function Navbar({
               <button className={styles.drawerBtn} onClick={close(onTickets)}>🎟️ Mes Billets</button>
               <button className={styles.drawerBtn} onClick={close(onFeed)}>📸 Feed</button>
               <button className={styles.drawerBtn} onClick={close(onMarket)}>🏪 Marché de revente</button>
+              <button className={styles.drawerBtn} onClick={close(onWeddings)}>💍 Ouimoove Weddings</button>
               {isOrganizer && (
                 <button className={styles.drawerBtnPurple} onClick={close(onOrganizer)}>📊 Dashboard organisateur</button>
               )}
