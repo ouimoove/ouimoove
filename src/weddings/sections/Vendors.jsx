@@ -9,6 +9,7 @@ import { mainDate } from '../lib/plan.js'
 import { waLink } from '../lib/basics.js'
 import { resizeImage } from './Website.jsx'
 import { Icon } from '../../components/Icon.jsx'
+import { SeviziSuggestions, SeviziRequests, SEVIZI_CATEGORIES } from './SeviziVendors.jsx'
 
 const LEAD_STATUSES = { new: { fr: 'Nouvelle', en: 'New' }, contacted: { fr: 'Contactée', en: 'Contacted' }, closed: { fr: 'Terminée', en: 'Closed' } }
 const VENDOR_STATUSES = { pending: { fr: 'En vérification', en: 'Under review' }, approved: { fr: 'En ligne', en: 'Live' }, rejected: { fr: 'Refusée', en: 'Rejected' } }
@@ -130,6 +131,7 @@ function Directory() {
           {shown.map((v) => <VendorCard key={v.id} v={v} onQuote={() => askQuote(v)} onBook={() => book(v)} />)}
         </div>
       )}
+      {SEVIZI_CATEGORIES.includes(cat) && <SeviziSuggestions key={cat} category={cat} />}
       {lead && <LeadForm vendor={lead} onClose={() => setLead(null)} />}
     </>
   )
@@ -229,8 +231,10 @@ function MyRequests() {
   const { user } = useWedding()
   const leads = useLoad(() => supabase.from('wedding_vendor_leads').select('*, wedding_vendors(name, category, whatsapp, phone, country)').eq('user_id', user.id).order('created_at', { ascending: false }), [user.id])
   if (leads.loading) return <Spinner />
-  if (!leads.data.length) return <Card><Empty icon="📨">{tx('Vous n’avez pas encore envoyé de demande.', 'You have not sent any requests yet.')}</Empty></Card>
+  if (!leads.data.length) return <div className={s.stack}><SeviziRequests /><Card><Empty icon="📨">{tx('Vous n’avez pas encore envoyé de demande.', 'You have not sent any requests yet.')}</Empty></Card></div>
   return (
+    <div className={s.stack}>
+    <SeviziRequests />
     <Card>
       <div className={s.list}>
         {leads.data.map((l) => (
@@ -245,6 +249,7 @@ function MyRequests() {
         ))}
       </div>
     </Card>
+    </div>
   )
 }
 
