@@ -1,6 +1,6 @@
 import styles from './Footer.module.css'
 
-export function Footer({ onHowItWorks, onFaq, onContact, onTerms, onPrivacy, onMarket, onCreateEvent }) {
+export function Footer({ onHowItWorks, onFaq, onContact, onTerms, onPrivacy, onMarket, onCreateEvent, onWeddings }) {
   const year = new Date().getFullYear()
   return (
     <footer className={styles.footer}>
@@ -19,6 +19,7 @@ export function Footer({ onHowItWorks, onFaq, onContact, onTerms, onPrivacy, onM
           <h4 className={styles.colTitle}>Découvrir</h4>
           <button className={styles.link} onClick={onMarket}>Marché de revente</button>
           <button className={styles.link} onClick={onCreateEvent}>Organiser un événement</button>
+          <button className={styles.link} onClick={onWeddings}>Ouimoove Weddings 💍</button>
           <button className={styles.link} onClick={onHowItWorks}>Comment ça marche</button>
         </div>
 

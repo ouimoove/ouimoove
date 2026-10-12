@@ -8,6 +8,7 @@ export function Hero({
   filterCategory, setFilterCategory,
   sortBy, setSortBy,
   onCreateEvent,
+  onWeddings,
 }) {
   return (
     <section className={styles.hero}>
@@ -64,7 +65,15 @@ export function Hero({
         <span className={styles.ctaLink}>Publiez-le gratuitement →</span>
       </div>
 
-      <div className={[styles.sortBar, styles.rise].join(" ")} style={{ '--i': 9 }}>
+      {onWeddings && (
+        <div className={[styles.weddingCta, styles.rise].join(" ")} style={{ '--i': 9 }}>
+          <button type="button" className={styles.weddingLink} onClick={onWeddings}>
+            💍 Vous préparez votre mariage ? <span>Ouimoove Weddings →</span>
+          </button>
+        </div>
+      )}
+
+      <div className={[styles.sortBar, styles.rise].join(" ")} style={{ '--i': 10 }}>
         <span>Trier par :</span>
         <select
           className={styles.sortSelect}

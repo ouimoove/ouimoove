@@ -50,6 +50,14 @@
 }
 .ctaLink { color: var(--orange); font-weight: 700; }
 
+.weddingCta { margin: -0.4rem 0 1.2rem; }
+.weddingLink {
+  background: none; border: 0; padding: 4px 8px; cursor: pointer;
+  color: var(--muted); font-size: 0.86rem; font-family: var(--font-body);
+}
+.weddingLink span { color: var(--purple); font-weight: 700; }
+.weddingLink:hover span { text-decoration: underline; text-underline-offset: 3px; }
+
 .sortBar {
   display: flex; align-items: center; justify-content: center;
   gap: 10px; color: var(--muted); font-size: 0.85rem; padding-bottom: 0.5rem;
