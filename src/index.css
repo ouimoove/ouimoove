@@ -1,6 +1,7 @@
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
+  --sat: env(safe-area-inset-top, 0px); /* top safe area; 0 inside the native app */
   --bg:       #fbf7f3;   /* warm off-white */
   --bg2:      #ffffff;   /* cards / modals */
   --bg3:      #f3edf0;   /* subtle plum-tinted surface (inputs, chips) */
@@ -64,3 +65,5 @@ body::before {
 ::-webkit-scrollbar-thumb { background: var(--purple); border-radius: 3px; }
 :focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
 button, input, select, textarea { font-family: var(--font-body); }
+
+html.native-app { --sat: 0px; }

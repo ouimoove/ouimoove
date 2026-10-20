@@ -6,7 +6,7 @@
   background: var(--s-bg); color: var(--s-ink);
   font-family: var(--font-body);
 }
-.bar { position: absolute; top: 0; left: 0; right: 0; z-index: 5; display: flex; justify-content: space-between; align-items: center; padding: calc(14px + env(safe-area-inset-top)) 18px 0; }
+.bar { position: absolute; top: 0; left: 0; right: 0; z-index: 5; display: flex; justify-content: space-between; align-items: center; padding: calc(14px + var(--sat, 0px)) 18px 0; }
 .mark { font-family: var(--serif); font-style: italic; font-weight: 600; font-size: 1.05rem; color: inherit; text-decoration: none; opacity: .85; }
 .lang { display: inline-flex; border-radius: 999px; overflow: hidden; border: 1px solid currentColor; opacity: .9; }
 .lang button { background: transparent; border: 0; color: inherit; padding: 5px 10px; font-size: .72rem; font-weight: 700; letter-spacing: .06em; cursor: pointer; }

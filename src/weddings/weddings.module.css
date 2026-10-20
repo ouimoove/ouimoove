@@ -30,8 +30,8 @@
 .topbar {
   position: sticky; top: 0; z-index: 100;
   display: flex; align-items: center; gap: 16px;
-  padding: env(safe-area-inset-top) 24px 0;
-  height: calc(64px + env(safe-area-inset-top));
+  padding: var(--sat, 0px) 24px 0;
+  height: calc(64px + var(--sat, 0px));
   background: rgba(255, 255, 255, .93);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border);
@@ -408,7 +408,7 @@ button.chip:hover { border-color: var(--border); }
 @media (max-width: 960px) {
   .layout { grid-template-columns: minmax(0, 1fr); padding: 0 0 24px; gap: 0; }
   .nav {
-    position: sticky; top: calc(56px + env(safe-area-inset-top)); z-index: 90;
+    position: sticky; top: calc(56px + var(--sat, 0px)); z-index: 90;
     flex-direction: row; overflow-x: auto; border-radius: 0; border-width: 0 0 1px; padding: 6px 10px;
     box-shadow: none; scrollbar-width: none; background: rgba(255, 255, 255, .96);
   }
@@ -416,7 +416,7 @@ button.chip:hover { border-color: var(--border); }
   .navCouple { display: none; }
   .navItem { width: auto; flex-shrink: 0; padding: 8px 11px; font-size: .82rem; }
   .main { padding: 18px 16px 0; }
-  .topbar { height: calc(56px + env(safe-area-inset-top)); padding: env(safe-area-inset-top) 16px 0; gap: 10px; }
+  .topbar { height: calc(56px + var(--sat, 0px)); padding: var(--sat, 0px) 16px 0; gap: 10px; }
   .board { grid-template-columns: minmax(0, 1fr); }
   .seatLayout { grid-template-columns: minmax(0, 1fr); }
   .grid3 { grid-template-columns: minmax(0, 1fr); }

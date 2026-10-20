@@ -1,6 +1,7 @@
 import React, { lazy, Suspense } from 'react'
 import ReactDOM from 'react-dom/client'
 import * as Sentry from '@sentry/react'
+import { Capacitor } from '@capacitor/core'
 import App from './App.jsx'
 import { isWeddingPath, isSitePath, siteSlugFrom, usePathname } from './weddings/router.js'
 import './index.css'
@@ -9,6 +10,10 @@ import './index.css'
 // public website). Both load on demand, so the events app stays as light.
 const WeddingApp = lazy(() => import('./weddings/WeddingApp.jsx'))
 const WeddingSite = lazy(() => import('./weddings/WeddingSite.jsx'))
+
+// The Capacitor shell already pads the WebView for the status bar (MainActivity),
+// so the page must not add the safe-area inset a second time.
+if (Capacitor.isNativePlatform()) document.documentElement.classList.add('native-app')
 
 Sentry.init({
   dsn: 'https://320f85e78a9e720ef7832254df9ad4be@o4511610589806592.ingest.de.sentry.io/4511623036928080',
