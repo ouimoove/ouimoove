@@ -1,4 +1,4 @@
-// Share-link preview for events: https://ouimoove.app/e/<eventId>
+// Share-link preview for events: https://ouimoove.app/e/<slug>  (or the old /e/<eventId>)
 //
 // WhatsApp, Facebook, iMessage etc. never run JavaScript — they read the
 // <meta property="og:*"> tags in the raw HTML. The app is a single-page app,
@@ -10,6 +10,7 @@
 const SITE = 'https://ouimoove.app'
 const FALLBACK_IMAGE = `${SITE}/ouimoove-logo.png`
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
 const esc = (s) => String(s ?? '')
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -21,12 +22,13 @@ function frDate(iso) {
   return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
 }
 
-async function loadEvent(id) {
+async function loadEvent(key) {
   const base = process.env.VITE_SUPABASE_URL
   const key = process.env.VITE_SUPABASE_ANON_KEY
   if (!base || !key) return null
   // Anon key + RLS: only published, public events are returned.
-  const url = `${base}/rest/v1/events?id=eq.${id}&status=eq.published&select=title,description,city,venue,event_date,image_url&limit=1`
+  const filter = UUID.test(key) ? `id=eq.${key}` : `slug=eq.${encodeURIComponent(key)}`
+  const url = `${base}/rest/v1/events?${filter}&status=eq.published&select=id,slug,title,description,city,venue,event_date,image_url&limit=1`
   const res = await fetch(url, { headers: { apikey: key, Authorization: `Bearer ${key}` } })
   if (!res.ok) return null
   const rows = await res.json()
@@ -34,8 +36,9 @@ async function loadEvent(id) {
 }
 
 export default async function handler(req, res) {
-  const id = String(req.query.id ?? '')
-  const appUrl = UUID.test(id) ? `/?event=${id}` : '/'
+  const id = String(req.query.id ?? '').toLowerCase()
+  const valid = UUID.test(id) || (SLUG.test(id) && id.length <= 80)
+  const appUrl = valid ? `/?event=${encodeURIComponent(id)}` : '/'
 
   let html
   try {
@@ -45,14 +48,14 @@ export default async function handler(req, res) {
     return
   }
 
-  const ev = UUID.test(id) ? await loadEvent(id).catch(() => null) : null
+  const ev = valid ? await loadEvent(id).catch(() => null) : null
 
   if (ev) {
     const title = `${ev.title} — OuiMoove`
     const when = [frDate(ev.event_date), ev.venue, ev.city].filter(Boolean).join(' · ')
     const desc = [when, (ev.description || '').slice(0, 180)].filter(Boolean).join(' — ') || 'Réservez vos billets sur OuiMoove.'
     const image = /^https:\/\//.test(ev.image_url || '') ? ev.image_url : FALLBACK_IMAGE
-    const pageUrl = `${SITE}/e/${id}`
+    const pageUrl = `${SITE}/e/${ev.slug || id}`
 
     const tags = `
     <meta property="og:type" content="website" />

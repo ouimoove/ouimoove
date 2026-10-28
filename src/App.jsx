@@ -158,8 +158,9 @@ function App() {
     if (modal) return
     const id = new URLSearchParams(window.location.search).get('event')
     if (!id || !catalog.length) return
-    if (!catalog.some((e) => e.id === id)) return
-    setSelectedEventId(id)
+    const found = catalog.find((e) => e.id === id || e.slug === id)
+    if (!found) return
+    setSelectedEventId(found.id)
     open('event')
   }, [catalog.length]) // eslint-disable-line react-hooks/exhaustive-deps
 

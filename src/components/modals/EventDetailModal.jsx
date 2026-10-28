@@ -13,7 +13,7 @@ export function EventDetailModal({ open, event, onClose, onAddToCart, toast }) {
 
   const isPast = event.date < new Date().toISOString().slice(0, 10)
 
-  const shareUrl = eventShareUrl(event.id)
+  const shareUrl = eventShareUrl(event)
   const shareText = `${event.title} · ${formatDate(event.date)} · ${event.city}`
 
   const shareWhatsapp = () => window.open(`https://wa.me/?text=${encodeURIComponent(`${shareText}\n${shareUrl}`)}`, '_blank', 'noopener')
