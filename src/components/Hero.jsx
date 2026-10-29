@@ -48,7 +48,7 @@ export function Hero({
         {/* ── Left: message + calls to action ── */}
         <div className={styles.copy}>
           <span className={[styles.badge, styles.rise].join(' ')} style={{ '--i': 0 }}>
-            BILLETTERIE · AFRIQUE DE L'OUEST
+            BILLETTERIE
           </span>
 
           {/* Entrance: headline words rise in one after another (--i = order). */}
