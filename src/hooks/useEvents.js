@@ -58,7 +58,7 @@ export function useEvents({ user, userRole, setLoad, setErr }) {
     const { data, error } = await supabase
       .from('events')
       .select(`
-        id, slug, title, description, city, venue, category,
+        id, slug, title, description, city, venue, category, is_private,
         event_date, emoji, image_url, status, organizer_id,
         profiles:organizer_id (full_name, business_name, account_type),
         ticket_types (id, name, price_cfa, quantity_total, quantity_sold)
@@ -89,7 +89,7 @@ export function useEvents({ user, userRole, setLoad, setErr }) {
     const { data, error } = await supabase
       .from('events')
       .select(`
-        id, slug, title, description, city, venue, category,
+        id, slug, title, description, city, venue, category, is_private,
         event_date, emoji, image_url, status, organizer_id,
         ticket_types (id, name, price_cfa, quantity_total, quantity_sold)
       `)
@@ -106,7 +106,7 @@ export function useEvents({ user, userRole, setLoad, setErr }) {
     const { data, error } = await supabase
       .from('events')
       .select(`
-        id, slug, title, description, city, venue, category,
+        id, slug, title, description, city, venue, category, is_private,
         event_date, emoji, image_url, status, organizer_id,
         profiles:organizer_id (full_name, business_name, account_type, email),
         ticket_types (id, name, price_cfa, quantity_total, quantity_sold)

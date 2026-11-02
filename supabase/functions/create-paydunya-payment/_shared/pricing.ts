@@ -60,7 +60,7 @@ export async function priceCart(
 
   const { data: types, error } = await admin
     .from('ticket_types')
-    .select('id, name, price_cfa, quantity_total, quantity_sold, event_id, events(id, title, date, status)')
+    .select('id, name, price_cfa, quantity_total, quantity_sold, event_id, events(id, title, event_date, status)')
     .in('id', [...qtyById.keys()])
   if (error || !types || types.length !== qtyById.size) return { ok: false, error: 'Billet introuvable.' }
 
@@ -72,7 +72,7 @@ export async function priceCart(
     if (!ev) return { ok: false, error: 'Événement indisponible.' }
     if (!opts.forCompletion) {
       if (ev.status !== 'published') return { ok: false, error: 'Événement indisponible.' }
-      if (ev.date < today) return { ok: false, error: 'Un des événements est déjà passé.' }
+      if (String(ev.event_date).slice(0, 10) < today) return { ok: false, error: 'Un des événements est déjà passé.' }
       if ((t.quantity_sold || 0) + qty > t.quantity_total) return { ok: false, error: `Plus assez de billets « ${t.name} ».` }
     }
     lines.push({
