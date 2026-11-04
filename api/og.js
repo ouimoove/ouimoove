@@ -22,12 +22,12 @@ function frDate(iso) {
   return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
 }
 
-async function loadEvent(key) {
+async function loadEvent(ref) {
   const base = process.env.VITE_SUPABASE_URL
   const key = process.env.VITE_SUPABASE_ANON_KEY
   if (!base || !key) return null
   // Anon key + RLS: only published, public events are returned.
-  const filter = UUID.test(key) ? `id=eq.${key}` : `slug=eq.${encodeURIComponent(key)}`
+  const filter = UUID.test(ref) ? `id=eq.${ref}` : `slug=eq.${encodeURIComponent(ref)}`
   const url = `${base}/rest/v1/events?${filter}&status=eq.published&select=id,slug,title,description,city,venue,event_date,image_url&limit=1`
   const res = await fetch(url, { headers: { apikey: key, Authorization: `Bearer ${key}` } })
   if (!res.ok) return null
