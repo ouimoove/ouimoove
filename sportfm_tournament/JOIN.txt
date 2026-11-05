@@ -1,0 +1,2 @@
+Download all .part files into one folder, open Command Prompt there and run:
+copy /b SportFM_Tournament_Promo.mp4.00.part+SportFM_Tournament_Promo.mp4.01.part SportFM_Tournament_Promo.mp4
