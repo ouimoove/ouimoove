@@ -21,6 +21,15 @@ const PD_HEADERS = {
 
 const SITE_URL = Deno.env.get('SITE_URL') ?? 'https://ouimoove.app'
 
+// OuiMoove checkout choice → PayDunya channel ids (developers.paydunya.com,
+// "Available Mobile Money Operators"). Flooz is Moov Africa Togo's wallet.
+const PAYDUNYA_CHANNELS: Record<string, string[]> = {
+  tmoney:     ['t-money-togo'],
+  flooz:      ['moov-togo'],
+  card:       ['card'],
+  simulation: ['card'],   // the resale panel's "Carte bancaire" option
+}
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json' } })
 }
@@ -132,6 +141,12 @@ serve(async (req) => {
       },
       custom_data: { user_id: user.id },
     }
+
+    // Show only the method the buyer picked on OuiMoove. Without this PayDunya
+    // guesses the country from the buyer's connection, and outside Togo it
+    // lands on "Autres" (international), where no method is enabled.
+    const channels = PAYDUNYA_CHANNELS[String(method ?? 'card')]
+    if (channels) (body.invoice as Record<string, unknown>).channels = channels
 
     // Pre-fill phone for mobile money
     if (method !== 'card' && phone) {
